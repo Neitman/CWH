@@ -15,41 +15,46 @@ export interface PlaybackState {
   lastUpdated: number;
 }
 
-const KEY_PLAYLIST = 'cwh:playlist';
-const KEY_CURRENT_SONG = 'cwh:current_song';
-const KEY_PLAYBACK = 'cwh:playback';
+const getPlaylistKey = (roomId: string) => `cwh:${roomId}:playlist`;
+const getCurrentSongKey = (roomId: string) => `cwh:${roomId}:current_song`;
+const getPlaybackKey = (roomId: string) => `cwh:${roomId}:playback`;
 
 // Retrieve all songs in the queue
-export async function getPlaylistQueue(): Promise<Song[]> {
-  const items = await redis.lrange(KEY_PLAYLIST, 0, -1);
+export async function getPlaylistQueue(roomId: string): Promise<Song[]> {
+  const key = getPlaylistKey(roomId);
+  const items = await redis.lrange(key, 0, -1);
   return items.map(item => JSON.parse(item));
 }
 
 // Append a song to the queue
-export async function addSongToQueue(song: Song): Promise<Song[]> {
-  await redis.rpush(KEY_PLAYLIST, JSON.stringify(song));
-  return getPlaylistQueue();
+export async function addSongToQueue(roomId: string, song: Song): Promise<Song[]> {
+  const key = getPlaylistKey(roomId);
+  await redis.rpush(key, JSON.stringify(song));
+  return getPlaylistQueue(roomId);
 }
 
 // Remove a song from the queue
-export async function removeSongFromQueue(songId: string): Promise<Song[]> {
-  const queue = await getPlaylistQueue();
+export async function removeSongFromQueue(roomId: string, songId: string): Promise<Song[]> {
+  const queue = await getPlaylistQueue(roomId);
   const updatedQueue = queue.filter(song => song.id !== songId);
+  const key = getPlaylistKey(roomId);
   
-  await redis.del(KEY_PLAYLIST);
+  await redis.del(key);
   for (const song of updatedQueue) {
-    await redis.rpush(KEY_PLAYLIST, JSON.stringify(song));
+    await redis.rpush(key, JSON.stringify(song));
   }
   
   return updatedQueue;
 }
 
 // Retrieve active playback state with drift compensation
-export async function getPlaybackState(): Promise<{ currentSong: Song | null; playback: PlaybackState }> {
-  const currentSongStr = await redis.get(KEY_CURRENT_SONG);
+export async function getPlaybackState(roomId: string): Promise<{ currentSong: Song | null; playback: PlaybackState }> {
+  const currentSongKey = getCurrentSongKey(roomId);
+  const currentSongStr = await redis.get(currentSongKey);
   const currentSong: Song | null = currentSongStr ? JSON.parse(currentSongStr) : null;
 
-  const playbackStr = await redis.get(KEY_PLAYBACK);
+  const playbackKey = getPlaybackKey(roomId);
+  const playbackStr = await redis.get(playbackKey);
   let playback: PlaybackState = playbackStr 
     ? JSON.parse(playbackStr) 
     : { isPlaying: false, progress: 0, lastUpdated: Date.now() };
@@ -65,7 +70,7 @@ export async function getPlaybackState(): Promise<{ currentSong: Song | null; pl
         progress: currentSong.duration,
         lastUpdated: Date.now()
       };
-      await redis.set(KEY_PLAYBACK, JSON.stringify(playback));
+      await redis.set(playbackKey, JSON.stringify(playback));
     } else {
       playback.progress = progress;
     }
@@ -75,37 +80,77 @@ export async function getPlaybackState(): Promise<{ currentSong: Song | null; pl
 }
 
 // Save explicit updates to player progress/play states
-export async function setPlaybackState(isPlaying: boolean, progress: number): Promise<PlaybackState> {
+export async function setPlaybackState(roomId: string, isPlaying: boolean, progress: number): Promise<PlaybackState> {
+  const playbackKey = getPlaybackKey(roomId);
   const playback: PlaybackState = {
     isPlaying,
     progress,
     lastUpdated: Date.now()
   };
-  await redis.set(KEY_PLAYBACK, JSON.stringify(playback));
+  await redis.set(playbackKey, JSON.stringify(playback));
   return playback;
 }
 
 // Play next song in line
-export async function playNextSong(): Promise<{ currentSong: Song | null; playback: PlaybackState; queue: Song[] }> {
-  const nextSongStr = await redis.lpop(KEY_PLAYLIST);
-  const queue = await getPlaylistQueue();
+export async function playNextSong(roomId: string): Promise<{ currentSong: Song | null; playback: PlaybackState; queue: Song[] }> {
+  const playlistKey = getPlaylistKey(roomId);
+  const currentSongKey = getCurrentSongKey(roomId);
+  
+  const nextSongStr = await redis.lpop(playlistKey);
+  const queue = await getPlaylistQueue(roomId);
   
   if (nextSongStr) {
     const nextSong: Song = JSON.parse(nextSongStr);
-    await redis.set(KEY_CURRENT_SONG, JSON.stringify(nextSong));
+    await redis.set(currentSongKey, JSON.stringify(nextSong));
     
+    const playbackKey = getPlaybackKey(roomId);
     const playback: PlaybackState = {
       isPlaying: true,
       progress: 0,
       lastUpdated: Date.now()
     };
-    await redis.set(KEY_PLAYBACK, JSON.stringify(playback));
+    await redis.set(playbackKey, JSON.stringify(playback));
     
     return { currentSong: nextSong, playback, queue };
   } else {
     // Clear out current playback as playlist ended
-    await redis.del(KEY_CURRENT_SONG);
-    const playback = await setPlaybackState(false, 0);
+    await redis.del(currentSongKey);
+    const playback = await setPlaybackState(roomId, false, 0);
     return { currentSong: null, playback, queue };
   }
+}
+
+// Get the room host from Redis
+export async function getRoomHost(roomId: string): Promise<string | null> {
+  return redis.get(`cwh:${roomId}:host`);
+}
+
+// Set the room host in Redis if it doesn't exist
+export async function setRoomHost(roomId: string, username: string): Promise<boolean> {
+  const result = await redis.setnx(`cwh:${roomId}:host`, username);
+  return result === 1;
+}
+
+// Check if a user has write permission in the room (is host or has explicit permission)
+export async function hasWritePermission(roomId: string, username: string): Promise<boolean> {
+  const host = await getRoomHost(roomId);
+  if (!host) {
+    // If no host exists yet, the first user automatically has permission (and will be registered as host)
+    return true;
+  }
+  if (username === host) {
+    return true;
+  }
+  const isMember = await redis.sismember(`cwh:${roomId}:write_permissions`, username);
+  return isMember === 1;
+}
+
+// Grant write permission to a user
+export async function grantWritePermission(roomId: string, username: string): Promise<void> {
+  await redis.sadd(`cwh:${roomId}:write_permissions`, username);
+}
+
+// Revoke write permission from a user
+export async function revokeWritePermission(roomId: string, username: string): Promise<void> {
+  await redis.srem(`cwh:${roomId}:write_permissions`, username);
 }

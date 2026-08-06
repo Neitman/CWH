@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CWH - Backend Management Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="glow-bg"></div>
+  
+  <div class="dashboard-wrapper">
+    <!-- Header -->
+    <header class="main-header glass-card">
+      <div class="header-brand">
+        <div class="pulse-indicator status-online" id="server-pulse"></div>
+        <h1>CWH Backend Management</h1>
+        <span class="badge">Local Admin</span>
+      </div>
+      <div class="header-meta">
+        <div class="meta-item">
+          <span class="meta-label">System Uptime:</span>
+          <span class="meta-value code" id="uptime-display">--:--:--</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Stats Cards Grid -->
+    <section class="stats-grid">
+      <!-- Memory Card -->
+      <div class="glass-card stat-card">
+        <div class="card-icon memory-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2" ry="2"></rect><line x1="6" y1="2" x2="6" y2="22"></line><line x1="18" y1="2" x2="18" y2="22"></line><line x1="2" y1="6" x2="22" y2="6"></line><line x1="2" y1="18" x2="22" y2="18"></line></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">System Memory</span>
+          <h3 class="stat-value" id="memory-usage">-- / -- GB</h3>
+          <div class="progress-bar-container">
+            <div class="progress-bar" id="memory-bar" style="width: 0%"></div>
+          </div>
+          <span class="stat-subtext" id="memory-percentage">--% used</span>
+        </div>
+      </div>
+
+      <!-- Postgres Card -->
+      <div class="glass-card stat-card">
+        <div class="card-icon database-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-2.239 10-5s-4.477-5-10-5S2 14.239 2 17s4.477 5 10 5z"></path><path d="M22 7c0 2.761-4.477 5-10 5S2 9.761 2 7s4.477-5 10-5 10 2.239 10 5z"></path><path d="M2 12c0 2.761 4.477 5 10 5s10-2.239 10-5"></path></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">PostgreSQL</span>
+          <h3 class="stat-value" id="postgres-status">Offline</h3>
+          <span class="stat-subtext text-success" id="postgres-subtext">Checking...</span>
+        </div>
+      </div>
+
+      <!-- Redis Card -->
+      <div class="glass-card stat-card">
+        <div class="card-icon cache-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="21" y1="12" x2="3" y2="12"></line></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Redis Cache</span>
+          <h3 class="stat-value" id="redis-status">Offline</h3>
+          <span class="stat-subtext text-success" id="redis-subtext">Checking...</span>
+        </div>
+      </div>
+
+      <!-- Users Count Card -->
+      <div class="glass-card stat-card">
+        <div class="card-icon users-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Registered Users</span>
+          <h3 class="stat-value" id="total-users">--</h3>
+          <span class="stat-subtext text-primary">Accounts in Postgres</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Content Section split in Columns -->
+    <div class="content-row">
+      <!-- Rooms Management Column -->
+      <section class="glass-card content-column room-manager">
+        <div class="column-header">
+          <h2>Active Listening Rooms</h2>
+          <span class="count-badge" id="active-rooms-count">0</span>
+        </div>
+        
+        <div class="rooms-list-container" id="rooms-list">
+          <div class="placeholder-msg">Loading active rooms...</div>
+        </div>
+      </section>
+
+      <!-- Users & system administration Column -->
+      <div class="content-column flex-column">
+        <!-- User accounts list -->
+        <section class="glass-card flex-grow user-manager">
+          <div class="column-header">
+            <h2>User Accounts</h2>
+          </div>
+          
+          <div class="table-container">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Username</th>
+                  <th>Created At</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="users-list-tbody">
+                <tr>
+                  <td colspan="4" class="placeholder-cell">Loading users list...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- System Controls Card -->
+        <section class="glass-card controls-card">
+          <div class="column-header">
+            <h2>System Control Panel</h2>
+          </div>
+          <p class="control-description">Execute administration queries directly on the backend databases. Proceed with caution.</p>
+          <div class="controls-actions">
+            <button class="btn btn-danger btn-block" id="flush-redis-btn">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+              Flush Redis Cache Database
+            </button>
+          </div>
+          <div id="system-action-status" class="status-msg hidden"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+  
+  <script src="main.js"></script>
+</body>
+</html>
