@@ -94,6 +94,20 @@ const playlistTitleInput = document.getElementById('playlist-title-input') as HT
 const playlistDescInput = document.getElementById('playlist-desc-input') as HTMLInputElement;
 const createPlaylistError = document.getElementById('create-playlist-error');
 
+const saveCurrentSongPlaylistBtn = document.getElementById('save-current-song-playlist-btn') as HTMLButtonElement;
+
+const editPlaylistModal = document.getElementById('edit-playlist-modal');
+const closeEditPlaylistModalBtn = document.getElementById('close-edit-playlist-modal-btn');
+const editPlaylistForm = document.getElementById('edit-playlist-form') as HTMLFormElement;
+const editPlaylistIdInput = document.getElementById('edit-playlist-id-input') as HTMLInputElement;
+const editPlaylistTitleInput = document.getElementById('edit-playlist-title-input') as HTMLInputElement;
+const editPlaylistDescInput = document.getElementById('edit-playlist-desc-input') as HTMLInputElement;
+const editPlaylistError = document.getElementById('edit-playlist-error');
+const openEditPlaylistModalBtn = document.getElementById('open-edit-playlist-modal-btn');
+
+const playlistAddSongInput = document.getElementById('playlist-add-song-input') as HTMLInputElement;
+const playlistAddSongBtn = document.getElementById('playlist-add-song-btn') as HTMLButtonElement;
+
 const addToPlaylistModal = document.getElementById('add-to-playlist-modal');
 const closeAddToPlaylistModalBtn = document.getElementById('close-add-to-playlist-modal-btn');
 const modalQuickCreatePlaylistBtn = document.getElementById('modal-quick-create-playlist-btn');
@@ -357,6 +371,7 @@ function syncPlayerWithState() {
     seekForwardBtn.disabled = false;
     loopBtn.disabled = false;
     fullscreenBtn.disabled = false;
+    if (saveCurrentSongPlaylistBtn) saveCurrentSongPlaylistBtn.disabled = false;
 
     // Update HUD metadata
     if (hudTitle && hudMeta) {
@@ -425,6 +440,7 @@ function syncPlayerWithState() {
     playPauseBtn.disabled = true;
     nextBtn.disabled = true;
     fullscreenBtn.disabled = true;
+    if (saveCurrentSongPlaylistBtn) saveCurrentSongPlaylistBtn.disabled = true;
     
     if (hudTitle && hudMeta) {
       hudTitle.textContent = 'No song playing currently';
@@ -559,12 +575,25 @@ function renderPlaylistQueue(queue: Song[]) {
         <span class="item-channel">${song.channelTitle}</span>
         <span class="item-added-by">Added by: ${addedByDisplay}</span>
       </div>
-      <div class="item-actions">
+      <div class="item-actions" style="display: flex; gap: 0.25rem;">
+        <button class="btn-icon add-to-user-playlist-btn" title="Save to Personal Playlist">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        </button>
         <button class="btn-icon danger-hover remove-btn" title="Remove" ${!canWrite ? 'disabled style="opacity: 0.4"' : ''}>
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
         </button>
       </div>
     `;
+
+    item.querySelector('.add-to-user-playlist-btn')?.addEventListener('click', () => {
+      openAddToPlaylistModal({
+        id: song.id,
+        title: song.title,
+        thumbnail: song.thumbnail,
+        channelTitle: song.channelTitle,
+        duration: song.duration
+      });
+    });
 
     const removeBtn = item.querySelector('.remove-btn') as HTMLButtonElement;
     if (!canWrite) {
@@ -719,6 +748,18 @@ playPauseBtn.addEventListener('click', togglePlayPause);
 seekBackBtn.addEventListener('click', () => seekByAmount(-5));
 seekForwardBtn.addEventListener('click', () => seekByAmount(5));
 loopBtn.addEventListener('click', toggleLoop);
+
+saveCurrentSongPlaylistBtn?.addEventListener('click', () => {
+  if (currentSong) {
+    openAddToPlaylistModal({
+      id: currentSong.id,
+      title: currentSong.title,
+      thumbnail: currentSong.thumbnail,
+      channelTitle: currentSong.channelTitle,
+      duration: currentSong.duration
+    });
+  }
+});
 
 // Next/Skip Action
 nextBtn.addEventListener('click', () => {
@@ -1230,9 +1271,19 @@ function renderUserPlaylists() {
       </div>
     `;
 
-    item.querySelector('.btn-view-pl')?.addEventListener('click', () => openPlaylistDetailsModal(pl.id));
-    item.querySelector('.btn-queue-pl')?.addEventListener('click', () => queuePlaylistToRoom(pl.id));
-    item.querySelector('.btn-delete-pl')?.addEventListener('click', () => deleteUserPlaylist(pl.id));
+    item.addEventListener('click', () => openPlaylistDetailsModal(pl.id));
+    item.querySelector('.btn-view-pl')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openPlaylistDetailsModal(pl.id);
+    });
+    item.querySelector('.btn-queue-pl')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      queuePlaylistToRoom(pl.id);
+    });
+    item.querySelector('.btn-delete-pl')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteUserPlaylist(pl.id);
+    });
 
     playlistsContainer.appendChild(item);
   });
@@ -1275,16 +1326,18 @@ function renderActiveViewingPlaylist() {
   }
 
   container.innerHTML = '';
-  items.forEach(song => {
+  items.forEach((song, index) => {
     const item = document.createElement('div');
     item.className = 'playlist-item';
     item.innerHTML = `
       <img src="${song.thumbnail}" class="item-thumb" alt="thumbnail" />
       <div class="item-details">
-        <span class="item-title">${song.title}</span>
+        <span class="item-title">${index + 1}. ${song.title}</span>
         <span class="item-channel">${song.channelTitle || ''}</span>
       </div>
-      <div class="item-actions">
+      <div class="item-actions" style="display: flex; gap: 0.2rem;">
+        ${index > 0 ? `<button class="btn-icon btn-move-up" title="Move Up"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg></button>` : ''}
+        ${index < items.length - 1 ? `<button class="btn-icon btn-move-down" title="Move Down"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>` : ''}
         <button class="btn-icon btn-queue-song" title="Add to Room Queue">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
         </button>
@@ -1293,6 +1346,14 @@ function renderActiveViewingPlaylist() {
         </button>
       </div>
     `;
+
+    item.querySelector('.btn-move-up')?.addEventListener('click', async () => {
+      await moveSongInUserPlaylist(playlist.id, index, index - 1);
+    });
+
+    item.querySelector('.btn-move-down')?.addEventListener('click', async () => {
+      await moveSongInUserPlaylist(playlist.id, index, index + 1);
+    });
 
     item.querySelector('.btn-queue-song')?.addEventListener('click', () => {
       socket.emit('add-song', {
@@ -1311,6 +1372,30 @@ function renderActiveViewingPlaylist() {
 
     container.appendChild(item);
   });
+}
+
+async function moveSongInUserPlaylist(playlistId: number, fromIdx: number, toIdx: number) {
+  if (!activeViewingPlaylist) return;
+  const items = [...activeViewingPlaylist.items];
+  const [moved] = items.splice(fromIdx, 1);
+  items.splice(toIdx, 0, moved);
+  activeViewingPlaylist.items = items;
+  renderActiveViewingPlaylist();
+
+  const token = localStorage.getItem('token');
+  if (!token) return;
+  try {
+    await fetch(`/api/playlists/${playlistId}/items/reorder`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ itemIds: items.map(i => i.id) })
+    });
+  } catch (err) {
+    console.error('Failed to reorder playlist items:', err);
+  }
 }
 
 async function removeSongFromUserPlaylist(playlistId: number, itemId: number) {
@@ -1366,15 +1451,16 @@ async function queuePlaylistToRoom(playlistId: number) {
         showToast('Playlist is empty', 'error');
         return;
       }
-      items.forEach(song => {
-        socket.emit('add-song', {
-          id: song.songId,
-          title: song.title,
-          thumbnail: song.thumbnail,
-          channelTitle: song.channelTitle,
-          duration: song.duration
-        });
-      });
+      
+      const songsToAdd = items.map(song => ({
+        id: song.songId,
+        title: song.title,
+        thumbnail: song.thumbnail,
+        channelTitle: song.channelTitle,
+        duration: song.duration
+      }));
+
+      socket.emit('add-songs', songsToAdd);
       showToast(`Queued ${items.length} song(s) to room!`, 'success');
     }
   } catch (err) {
@@ -1477,9 +1563,125 @@ closeViewPlaylistModalBtn?.addEventListener('click', () => {
   if (viewPlaylistModal) viewPlaylistModal.classList.add('hidden');
 });
 
-queueEntirePlaylistBtn?.addEventListener('click', () => {
+  queueEntirePlaylistBtn?.addEventListener('click', () => {
   if (activeViewingPlaylist) {
     queuePlaylistToRoom(activeViewingPlaylist.playlist.id);
+  }
+});
+
+// Edit Playlist Event Listeners
+openEditPlaylistModalBtn?.addEventListener('click', () => {
+  if (!activeViewingPlaylist) return;
+  editPlaylistIdInput.value = activeViewingPlaylist.playlist.id.toString();
+  editPlaylistTitleInput.value = activeViewingPlaylist.playlist.title;
+  editPlaylistDescInput.value = activeViewingPlaylist.playlist.description || '';
+  if (editPlaylistError) editPlaylistError.classList.add('hidden');
+  if (editPlaylistModal) editPlaylistModal.classList.remove('hidden');
+});
+
+closeEditPlaylistModalBtn?.addEventListener('click', () => {
+  if (editPlaylistModal) editPlaylistModal.classList.add('hidden');
+});
+
+editPlaylistForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const playlistId = parseInt(editPlaylistIdInput.value);
+  const title = editPlaylistTitleInput.value.trim();
+  const description = editPlaylistDescInput.value.trim();
+
+  if (isNaN(playlistId) || !title) return;
+  const token = localStorage.getItem('token');
+  if (!token) return;
+
+  try {
+    const res = await fetch(`/api/playlists/${playlistId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ title, description })
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      showToast('Playlist updated!', 'success');
+      if (editPlaylistModal) editPlaylistModal.classList.add('hidden');
+      await openPlaylistDetailsModal(playlistId);
+      await fetchUserPlaylists();
+    } else {
+      if (editPlaylistError) {
+        editPlaylistError.textContent = data.error || 'Failed to update playlist.';
+        editPlaylistError.classList.remove('hidden');
+      }
+    }
+  } catch (err) {
+    console.error('Error updating playlist:', err);
+  }
+});
+
+// Add Song directly inside Playlist View Modal Listener
+playlistAddSongBtn?.addEventListener('click', async () => {
+  if (!activeViewingPlaylist) return;
+  const queryStr = playlistAddSongInput.value.trim();
+  if (!queryStr) return;
+
+  playlistAddSongBtn.disabled = true;
+  playlistAddSongBtn.textContent = 'Adding...';
+
+  const token = localStorage.getItem('token');
+  if (!token) return;
+
+  try {
+    let results: Omit<Song, 'addedBy'>[] = [];
+    const isId = !queryStr.includes(' ');
+    const url = isId 
+      ? `/api/video-details?id=${encodeURIComponent(queryStr)}`
+      : `/api/search?q=${encodeURIComponent(queryStr)}`;
+      
+    const resDetails = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (resDetails.ok) {
+      results = await resDetails.json();
+    }
+
+    if (!results || results.length === 0) {
+      showToast('No song found with provided query or URL', 'error');
+      return;
+    }
+
+    const song = results[0];
+    const addRes = await fetch(`/api/playlists/${activeViewingPlaylist.playlist.id}/items`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(song)
+    });
+
+    if (addRes.ok) {
+      showToast(`Added "${song.title}" to playlist!`, 'success');
+      playlistAddSongInput.value = '';
+      await openPlaylistDetailsModal(activeViewingPlaylist.playlist.id);
+      await fetchUserPlaylists();
+    } else {
+      const err = await addRes.json();
+      showToast(err.error || 'Failed to add song', 'error');
+    }
+  } catch (err) {
+    showToast((err as Error).message, 'error');
+  } finally {
+    playlistAddSongBtn.disabled = false;
+    playlistAddSongBtn.textContent = '+ Add Song';
+  }
+});
+
+playlistAddSongInput?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    playlistAddSongBtn?.click();
   }
 });
 
@@ -1938,23 +2140,66 @@ leaveRoomBtn.addEventListener('click', () => {
   roomSelectionOverlay.classList.remove('hidden');
 });
 
-// Copy Invite Link Action
-copyRoomLinkBtn.addEventListener('click', async () => {
-  const inviteUrl = window.location.href;
-  try {
-    await navigator.clipboard.writeText(inviteUrl);
-    // Show temporary feedback on button
-    const originalHTML = copyRoomLinkBtn.innerHTML;
-    copyRoomLinkBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-    copyRoomLinkBtn.setAttribute('title', 'Copied!');
-    setTimeout(() => {
-      copyRoomLinkBtn.innerHTML = originalHTML;
-      copyRoomLinkBtn.setAttribute('title', 'Copy Invite Link');
-    }, 2000);
-  } catch (err) {
-    console.error('Failed to copy link:', err);
+// Helper function to safely copy text to clipboard across HTTP and HTTPS contexts
+async function copyToClipboard(text: string): Promise<boolean> {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (err) {
+      console.warn('Clipboard API failed, attempting fallback copy...', err);
+    }
   }
-});
+
+  try {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    return successful;
+  } catch (err) {
+    console.error('Fallback clipboard copy failed:', err);
+    return false;
+  }
+}
+
+// Copy Invite Link / Room ID Action
+const handleCopyRoomLink = async () => {
+  const roomId = currentRoomId || document.getElementById('room-code-display')?.textContent?.trim() || '';
+  if (!roomId || roomId === 'N/A') {
+    showToast('No active room code to copy', 'error');
+    return;
+  }
+
+  const url = new URL(window.location.origin + window.location.pathname);
+  url.searchParams.set('room', roomId.toLowerCase());
+  const inviteUrl = url.toString();
+
+  const success = await copyToClipboard(inviteUrl);
+  if (success) {
+    showToast(`Copied room invite link to clipboard!`, 'success');
+    if (copyRoomLinkBtn) {
+      const originalHTML = copyRoomLinkBtn.innerHTML;
+      copyRoomLinkBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+      copyRoomLinkBtn.setAttribute('title', 'Copied!');
+      setTimeout(() => {
+        copyRoomLinkBtn.innerHTML = originalHTML;
+        copyRoomLinkBtn.setAttribute('title', 'Copy Invite Link');
+      }, 2000);
+    }
+  } else {
+    showToast('Failed to copy room link', 'error');
+  }
+};
+
+copyRoomLinkBtn?.addEventListener('click', handleCopyRoomLink);
+document.getElementById('room-code-display')?.addEventListener('click', handleCopyRoomLink);
 
 // Page Load Initialization Flow
 async function initApp() {

@@ -117,6 +117,40 @@ export const registerMusicHandlers = (io: Server, socket: Socket, roomId: string
     }
   });
 
+  // Handle adding multiple songs (batch playlist) to room queue
+  socket.on('add-songs', async (songsData: Omit<playlistService.Song, 'addedBy'>[]) => {
+    if (!socket.data.userId) {
+      socket.emit('auth-error', { error: 'Please log in to add songs to the playlist.' });
+      return;
+    }
+    const canWrite = await playlistService.hasWritePermission(roomId, socket.data.username);
+    if (!canWrite) {
+      socket.emit('auth-error', { error: 'Permission denied. You do not have write access in this room.' });
+      return;
+    }
+
+    if (!Array.isArray(songsData) || songsData.length === 0) return;
+
+    try {
+      const songs: playlistService.Song[] = songsData.map(s => ({
+        ...s,
+        addedBy: socket.data.username
+      }));
+      
+      const playlist = await playlistService.addSongsToQueue(roomId, songs);
+      io.to(roomId).emit('playlist-updated', playlist);
+      console.log(`[Room ${roomId}] Added ${songs.length} songs to queue by ${socket.data.username}`);
+
+      // Auto play if no song is currently playing
+      const { currentSong } = await playlistService.getPlaybackState(roomId);
+      if (!currentSong) {
+        await playNextSong();
+      }
+    } catch (error) {
+      console.error('Error adding batch songs to playlist:', error);
+    }
+  });
+
   // Handle removing a song from queue
   socket.on('remove-song', async (songId: string) => {
     if (!socket.data.userId) {

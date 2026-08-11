@@ -203,6 +203,9 @@ router.delete('/:id/items/:itemId', async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'Song item not found in playlist.' });
     }
 
+    // Update playlist updated_at timestamp
+    await query(`UPDATE user_playlists SET updated_at = CURRENT_TIMESTAMP WHERE id = $1`, [playlistId]);
+
     return res.json({ message: 'Song removed from playlist.', itemId });
   } catch (error) {
     console.error('Error removing song from playlist:', error);
@@ -210,4 +213,85 @@ router.delete('/:id/items/:itemId', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// 7. Update playlist title and description
+router.put('/:id', async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  const playlistId = parseInt(req.params.id);
+  if (isNaN(playlistId)) {
+    return res.status(400).json({ error: 'Invalid playlist ID.' });
+  }
+
+  const { title, description } = req.body;
+  if (!title || !title.trim()) {
+    return res.status(400).json({ error: 'Playlist title is required.' });
+  }
+
+  try {
+    const result = await query(
+      `UPDATE user_playlists
+       SET title = $1, description = $2, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $3 AND user_id = $4
+       RETURNING id, title, description, created_at, updated_at`,
+      [title.trim(), description !== undefined ? description.trim() : '', playlistId, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Playlist not found or access denied.' });
+    }
+
+    return res.json({
+      message: 'Playlist updated successfully!',
+      playlist: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error updating playlist:', error);
+    return res.status(500).json({ error: 'Failed to update playlist.' });
+  }
+});
+
+// 8. Reorder items in playlist
+router.put('/:id/items/reorder', async (req: AuthRequest, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  const playlistId = parseInt(req.params.id);
+  if (isNaN(playlistId)) {
+    return res.status(400).json({ error: 'Invalid playlist ID.' });
+  }
+
+  const { itemIds } = req.body as { itemIds: number[] };
+  if (!Array.isArray(itemIds)) {
+    return res.status(400).json({ error: 'itemIds array is required.' });
+  }
+
+  try {
+    const playlistCheck = await query(
+      `SELECT id FROM user_playlists WHERE id = $1 AND user_id = $2`,
+      [playlistId, userId]
+    );
+
+    if (playlistCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Playlist not found or access denied.' });
+    }
+
+    for (let index = 0; index < itemIds.length; index++) {
+      const itemId = itemIds[index];
+      await query(
+        `UPDATE user_playlist_items SET position = $1 WHERE id = $2 AND playlist_id = $3`,
+        [index + 1, itemId, playlistId]
+      );
+    }
+
+    await query(`UPDATE user_playlists SET updated_at = CURRENT_TIMESTAMP WHERE id = $1`, [playlistId]);
+
+    return res.json({ message: 'Playlist reordered successfully.' });
+  } catch (error) {
+    console.error('Error reordering playlist items:', error);
+    return res.status(500).json({ error: 'Failed to reorder playlist items.' });
+  }
+});
+
 export default router;
+

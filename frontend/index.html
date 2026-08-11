@@ -189,6 +189,9 @@
                     <button type="button" id="fullscreen-btn" class="btn btn-control btn-fullscreen" title="Full Screen" disabled>
                       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
                     </button>
+                    <button type="button" id="save-current-song-playlist-btn" class="btn btn-control" title="Save Playing Song to Playlist" disabled style="color: var(--color-secondary);">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -251,7 +254,7 @@
                 <div class="info-item">
                   <span class="info-label">Room Code</span>
                   <div style="display: flex; gap: 0.5rem; align-items: center;">
-                    <span class="info-value code" id="room-code-display">N/A</span>
+                    <span class="info-value code" id="room-code-display" style="cursor: pointer;" title="Click to copy room invite link">N/A</span>
                     <button id="copy-room-link-btn" class="btn btn-icon" title="Copy Invite Link" style="width: 28px; height: 28px;">
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
                     </button>
@@ -412,6 +415,29 @@
       </div>
     </div>
 
+    <!-- Edit Playlist Modal -->
+    <div id="edit-playlist-modal" class="modal-overlay hidden">
+      <div class="glass-card modal-card">
+        <button type="button" id="close-edit-playlist-modal-btn" class="btn-close">&times;</button>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem; color: #fff;">Edit Playlist</h3>
+        <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 1.25rem;">Update title and description of your playlist.</p>
+
+        <form id="edit-playlist-form">
+          <input type="hidden" id="edit-playlist-id-input" />
+          <div class="form-group">
+            <label for="edit-playlist-title-input">Playlist Title</label>
+            <input type="text" id="edit-playlist-title-input" required placeholder="e.g. My Favorite Jams, Chill Lofi..." />
+          </div>
+          <div class="form-group">
+            <label for="edit-playlist-desc-input">Description (Optional)</label>
+            <input type="text" id="edit-playlist-desc-input" placeholder="e.g. Best tracks for working or relaxing" />
+          </div>
+          <div id="edit-playlist-error" class="error-msg hidden"></div>
+          <button type="submit" id="edit-playlist-submit-btn" class="btn btn-primary btn-block">Save Changes</button>
+        </form>
+      </div>
+    </div>
+
     <!-- Add Song to Playlist Modal -->
     <div id="add-to-playlist-modal" class="modal-overlay hidden">
       <div class="glass-card modal-card" style="max-width: 440px;">
@@ -434,14 +460,27 @@
       <div class="glass-card modal-card" style="max-width: 580px; width: 90%;">
         <button type="button" id="close-view-playlist-modal-btn" class="btn-close">&times;</button>
         
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0.75rem;">
           <div>
-            <h3 id="view-playlist-title" style="font-size: 1.3rem; color: #fff; margin-bottom: 0.25rem;">Playlist Title</h3>
-            <p id="view-playlist-desc" style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 0;"></p>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <h3 id="view-playlist-title" style="font-size: 1.3rem; color: #fff; margin-bottom: 0;">Playlist Title</h3>
+              <button type="button" id="open-edit-playlist-modal-btn" class="btn btn-icon btn-icon-sm" title="Edit Playlist Title & Description" style="width: 26px; height: 26px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+              </button>
+            </div>
+            <p id="view-playlist-desc" style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 0; margin-top: 0.25rem;"></p>
           </div>
           <button type="button" id="queue-entire-playlist-btn" class="btn btn-primary" style="white-space: nowrap; font-size: 0.8rem; padding: 0.4rem 0.85rem;">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
             Queue All to Room
+          </button>
+        </div>
+
+        <!-- Add Song to this Playlist directly input box -->
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+          <input type="text" id="playlist-add-song-input" placeholder="Paste YouTube Video ID or URL to add directly..." style="font-size: 0.8rem; padding: 0.45rem 0.75rem;" />
+          <button type="button" id="playlist-add-song-btn" class="btn btn-primary" style="font-size: 0.75rem; white-space: nowrap; padding: 0.45rem 0.75rem; background: var(--color-secondary);">
+            + Add Song
           </button>
         </div>
 
@@ -454,3 +493,4 @@
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
+

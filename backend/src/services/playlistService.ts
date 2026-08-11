@@ -33,6 +33,15 @@ export async function addSongToQueue(roomId: string, song: Song): Promise<Song[]
   return getPlaylistQueue(roomId);
 }
 
+// Append multiple songs to the queue
+export async function addSongsToQueue(roomId: string, songs: Song[]): Promise<Song[]> {
+  if (songs.length === 0) return getPlaylistQueue(roomId);
+  const key = getPlaylistKey(roomId);
+  const items = songs.map(song => JSON.stringify(song));
+  await redis.rpush(key, ...items);
+  return getPlaylistQueue(roomId);
+}
+
 // Remove a song from the queue
 export async function removeSongFromQueue(roomId: string, songId: string): Promise<Song[]> {
   const queue = await getPlaylistQueue(roomId);
