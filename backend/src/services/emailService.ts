@@ -49,7 +49,7 @@ async function getTransporter(): Promise<nodemailer.Transporter> {
 async function sendMail(to: string, subject: string, html: string) {
   try {
     const client = await getTransporter();
-    const fromAddress = process.env.EMAIL_FROM || '"CWH Youtube Jam" <no-reply@cwh-jam.com>';
+    const fromAddress = process.env.EMAIL_FROM || '"Watch Party Hub" <no-reply@watchparty.com>';
     
     const info = await client.sendMail({
       from: fromAddress,
@@ -75,11 +75,11 @@ async function sendMail(to: string, subject: string, html: string) {
 // Send OTP verification code
 export async function sendOTPEmail(to: string, otp: string, purpose: 'register' | 'reset') {
   const isRegister = purpose === 'register';
-  const subject = isRegister ? 'CWH Jamming - Verify Your Registration' : 'CWH Jamming - Reset Your Password';
+  const subject = isRegister ? 'Watch Party Hub - Verify Your Registration' : 'Watch Party Hub - Reset Your Password';
   
   const title = isRegister ? 'Confirm Your Registration' : 'Reset Your Password';
   const message = isRegister 
-    ? 'Thank you for registering at CWH Youtube Jam. Use the 6-digit verification code below to verify your email and activate your account:'
+    ? 'Thank you for registering at Watch Party Hub. Use the 6-digit verification code below to verify your email and activate your account:'
     : 'We received a request to reset your password. Use the 6-digit verification code below to reset your password:';
 
   const html = `
@@ -102,20 +102,20 @@ export async function sendOTPEmail(to: string, otp: string, purpose: 'register' 
 
 // Send Welcome Email
 export async function sendWelcomeEmail(to: string, username: string) {
-  const subject = 'Welcome to CWH Youtube Jam!';
+  const subject = 'Welcome to Watch Party Hub!';
   const html = `
     <div style="font-family: 'Outfit', sans-serif, Arial; max-width: 550px; margin: 0 auto; padding: 25px; border-radius: 12px; background: #0d0b18; color: #f8fafc; border: 1px solid rgba(255,255,255,0.08);">
       <h2 style="color: #8b5cf6; font-size: 22px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-top: 0;">Account Activated!</h2>
       <p style="font-size: 15px; color: #cbd5e1; line-height: 1.5; margin: 15px 0;">Hello <strong>${username}</strong>,</p>
       <p style="font-size: 15px; color: #cbd5e1; line-height: 1.5; margin: 15px 0;">Your email has been verified successfully. Your account is now active and ready!</p>
-      <p style="font-size: 15px; color: #cbd5e1; line-height: 1.5; margin: 15px 0;">Welcome to <strong>CWH Youtube Jam</strong>. You can now create rooms, invite friends, queue up your playlists, and stream together completely ad-free!</p>
+      <p style="font-size: 15px; color: #cbd5e1; line-height: 1.5; margin: 15px 0;">Welcome to <strong>Watch Party Hub</strong>. You can now create rooms, invite friends, queue up your playlists, and stream together completely ad-free!</p>
       
       <div style="text-align: center; margin: 30px 0;">
         <a href="http://localhost:5173" style="display: inline-block; background: #8b5cf6; color: white; padding: 12px 25px; font-weight: 600; text-decoration: none; border-radius: 8px; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);">Go to App Dashboard</a>
       </div>
       
       <p style="font-size: 13px; color: #64748b; margin-top: 25px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
-        Enjoy the music!<br/>The CWH Jamming Team
+        Enjoy watching!<br/>The Watch Party Team
       </p>
     </div>
   `;

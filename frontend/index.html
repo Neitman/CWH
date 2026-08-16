@@ -4,276 +4,303 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Watch Party - Real-Time Collaborative Video Streaming</title>
     
-    <!-- SEO Optimization by Neitman -->
-    <title>Neitman CWH - Collaborative YouTube Music Jamming</title>
-    <meta name="description" content="Neitman CWH (Collaborative Watch Party) allows you to create listening rooms, invite friends, queue YouTube music, and stream together completely ad-free in real-time." />
-    <meta name="keywords" content="Neitman, CWH, YouTube Sync, Music Jamming, Watch Party, Collaborative Playlist, Ad-free YouTube" />
-    <meta name="author" content="Neitman" />
-    
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="Neitman CWH - Collaborative YouTube Music Jamming" />
-    <meta property="og:description" content="Create ad-free collaborative listening rooms and sync playbacks with your friends in real-time." />
-    <meta property="og:image" content="/vite.svg" />
-    
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:title" content="Neitman CWH - Collaborative YouTube Music Jamming" />
-    <meta property="twitter:description" content="Create ad-free collaborative listening rooms and sync playbacks with your friends in real-time." />
-
     <!-- Premium Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   </head>
   <body>
-    <!-- Global Instant Preloader (renders before CSS/JS fully loads) -->
+    <!-- Global Preloader -->
     <div id="global-preloader" style="
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: #09070f;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 99999;
-      font-family: 'Outfit', system-ui, -apple-system, sans-serif;
-      transition: opacity 0.4s ease, visibility 0.4s ease;
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: #09090b; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; z-index: 99999;
+      font-family: 'Outfit', sans-serif; transition: opacity 0.4s ease, visibility 0.4s ease;
     ">
       <div style="
-        width: 50px;
-        height: 50px;
-        border: 4px solid rgba(139, 92, 246, 0.1);
-        border-top: 4px solid #8b5cf6;
-        border-right: 4px solid #06b6d4;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        margin-bottom: 20px;
-        box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
+        width: 44px; height: 44px; border: 3px solid rgba(255, 255, 255, 0.1);
+        border-top: 3px solid #ffffff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 18px;
       "></div>
-      <style>
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      </style>
-      <div style="
-        font-size: 1.15rem;
-        font-weight: 800;
-        letter-spacing: 0.12em;
-        color: #fff;
-        text-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
-      ">NEITMAN CWH</div>
-      <div style="
-        font-size: 0.75rem;
-        color: #a78bfa;
-        margin-top: 6px;
-        opacity: 0.8;
-      ">Loading premium experience...</div>
+      <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+      <div style="font-size: 1.1rem; font-weight: 800; letter-spacing: 0.12em; color: #ffffff;">WATCH PARTY</div>
+      <div style="font-size: 0.75rem; color: #a1a1aa; margin-top: 6px;">Loading application...</div>
     </div>
 
-    <!-- Blurry Glowing Background Blobs -->
-    <div class="bg-blob blob-purple"></div>
-    <div class="bg-blob blob-cyan"></div>
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="toast-container"></div>
 
     <div id="app">
       <div class="dashboard-wrapper">
-        <!-- Header -->
+        <!-- Global Header -->
         <header class="dashboard-header">
-          <div class="title-section">
-            <h1>CWH Youtube Jam <span style="font-size:0.75rem; font-weight: 700; vertical-align:middle; background:rgba(6,182,212,0.12); border:1px solid rgba(6,182,212,0.3); color:#22d3ee; padding:2px 6px; border-radius:4px; margin-left:8px; text-transform: uppercase; letter-spacing: 0.05em;">By Neitman</span></h1>
-            <p class="subtitle">Watch youtube sync with your homies with no ADs</p>
+          <div class="title-section" id="header-logo-btn" style="cursor: pointer;">
+            <h1>Watch Party</h1>
+            <p class="subtitle">Synchronized Watch Rooms</p>
           </div>
           <div class="header-actions">
-            <!-- Auth User Status Section -->
             <div id="auth-status-container" class="auth-status-container">
               <button id="open-auth-btn" class="btn btn-primary">Login / Register</button>
               <div id="user-profile-section" class="user-profile-section hidden">
-                <span class="user-welcome">Welcome, <span id="display-username" class="username-highlight">User</span></span>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <img id="header-avatar-img" class="header-avatar-img" src="https://ui-avatars.com/api/?name=User&background=6366f1&color=fff" alt="Avatar" />
+                  <span class="user-welcome"><span id="display-username" class="username-highlight">User</span></span>
+                </div>
+                <button id="go-to-profile-btn" class="btn btn-secondary-outline" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;">My Profile</button>
                 <button id="logout-btn" class="btn btn-danger-outline">Logout</button>
               </div>
             </div>
-            <div class="status-badge disconnected" id="connection-status">
+            <div class="status-badge disconnected hidden" id="connection-status">
               <span class="status-dot"></span>
               <span class="status-text">Disconnected</span>
             </div>
           </div>
         </header>
 
-        <!-- Main Content Grid -->
-        <main class="dashboard-grid">
+        <!-- ========================================================= -->
+        <!-- 1. MAIN PAGE (Landing & Auth Promo)                      -->
+        <!-- ========================================================= -->
+        <div id="main-page" class="page-view">
+          <div class="glass-card hero-card" style="text-align: center; padding: 3rem 1.5rem; border-radius: 16px;">
+            <h2 style="font-size: 2.2rem; font-weight: 800; color: #fff; margin-bottom: 0.75rem;">Watch Together in Real-Time</h2>
+            <p style="color: var(--color-text-muted); max-width: 600px; margin: 0 auto 1.75rem auto; font-size: 1rem; line-height: 1.6;">
+              Create persistent watch rooms, manage your profile, sync YouTube videos and custom video files live with friends.
+            </p>
+            <div style="display: flex; gap: 1rem; justify-content: center; align-items: center; flex-wrap: wrap;">
+              <button id="main-login-btn" class="btn btn-primary" style="padding: 0.75rem 2rem; font-size: 1rem; font-weight: 600;">Get Started / Login</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- 2. PROFILE PAGE (User Info & My Created Rooms)            -->
+        <!-- ========================================================= -->
+        <div id="profile-page" class="page-view hidden" style="display: none !important;">
+          <!-- User Profile Info Card -->
+          <div class="glass-card profile-info-card" style="margin-bottom: 1.5rem;">
+            <div class="profile-avatar-wrapper">
+              <img id="profile-avatar-img" src="https://ui-avatars.com/api/?name=User&background=6366f1&color=fff" alt="Avatar" class="profile-avatar-img" />
+              <label for="avatar-file-input" class="avatar-upload-btn" title="Upload new avatar image">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              </label>
+              <input type="file" id="avatar-file-input" accept="image/*" class="hidden" />
+            </div>
+
+            <div class="profile-details">
+              <div class="profile-name-row">
+                <h2 id="profile-display-name" class="profile-display-name">User</h2>
+                <button id="toggle-edit-name-btn" class="btn btn-icon btn-icon-sm" title="Edit Display Name">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                </button>
+              </div>
+
+              <!-- Inline edit display name form -->
+              <form id="edit-display-name-form" class="edit-name-form hidden">
+                <input type="text" id="display-name-input" placeholder="Enter display name..." required />
+                <button type="submit" class="btn btn-primary btn-sm" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;">Save</button>
+                <button type="button" id="cancel-edit-name-btn" class="btn btn-secondary-outline btn-sm" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;">Cancel</button>
+              </form>
+
+              <div class="profile-meta">
+                <span class="profile-meta-item">Username: <strong id="profile-username">@user</strong></span>
+                <span class="profile-meta-item" id="profile-email-container">Email: <strong id="profile-email">user@example.com</strong></span>
+              </div>
+            </div>
+
+            <div class="profile-actions">
+              <button id="profile-create-room-btn" class="btn btn-primary" style="padding: 0.6rem 1.2rem; font-size: 0.9rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.4rem;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Create New Room
+              </button>
+              <button id="profile-join-room-btn" class="btn btn-secondary-outline" style="padding: 0.6rem 1.2rem; font-size: 0.9rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.4rem;"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                Join a Room
+              </button>
+            </div>
+          </div>
+
+          <!-- My Persistent Rooms Grid -->
+          <section class="glass-card profile-rooms-section">
+            <div class="section-header-row">
+              <h2 class="card-title">My Created Rooms</h2>
+              <span id="my-rooms-count-badge" class="badge">0 Rooms</span>
+            </div>
+            <p class="card-description">Persistent watch party rooms saved to your account. Click Enter Room to start watching.</p>
+            <div id="profile-rooms-grid" class="profile-rooms-grid">
+              <div class="search-placeholder">Loading rooms...</div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- 3. ROOM PAGE (Active Watch Party Dashboard)               -->
+        <!-- ========================================================= -->
+        <main id="room-page" class="dashboard-grid page-view hidden" style="display: none !important;">
           <!-- Left Column: Player & Queue -->
           <div class="main-column">
             <!-- Now Playing Card -->
             <section class="glass-card player-card">
-              <h2 class="card-title">Now Playing</h2>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <h2 class="card-title" style="margin-bottom: 0;">Now Playing</h2>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <span class="info-value code" id="room-code-display" style="cursor: pointer;" title="Click to copy invite link">N/A</span>
+                  <button id="copy-room-link-btn" class="btn btn-icon" title="Copy Invite Link" style="width: 28px; height: 28px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+                  </button>
+                  <button id="leave-room-btn" class="btn btn-danger-outline" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;">Leave Room</button>
+                </div>
+              </div>
+
               <div class="song-details">
-                <span id="player-song-title" class="player-title">No song playing currently</span>
+                <span id="player-song-title" class="player-title">No video playing currently</span>
                 <span id="player-song-channel" class="player-channel"></span>
               </div>
               
-                 <div class="video-container" id="player-container">
-                   <div id="youtube-player"></div>
-                   
-                   <!-- Fullscreen Overlay HUD -->
-                   <div id="fullscreen-hud" class="fullscreen-hud hidden">
-                     <!-- Top Bar -->
-                     <div class="hud-top-bar">
-                       <div class="hud-song-info glass-card">
-                         <span class="hud-song-title" id="hud-title">No song playing currently</span>
-                         <span class="hud-song-meta" id="hud-meta"></span>
-                       </div>
-                       <button class="hud-exit-btn" id="hud-exit-btn" title="Exit Fullscreen">
-                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7"/></svg>
-                       </button>
-                     </div>
-                     
-                     <!-- Bottom Control Bar -->
-                     <div class="hud-bottom-bar glass-card">
-                       <button type="button" class="hud-control-btn" id="hud-seek-back-btn" title="Rewind 5s (Left Arrow)">
-                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
-                       </button>
-                       <button type="button" class="hud-control-btn" id="hud-play-btn">
-                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                       </button>
-                       <button type="button" class="hud-control-btn" id="hud-seek-forward-btn" title="Forward 5s (Right Arrow)">
-                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
-                       </button>
-                       <button type="button" class="hud-control-btn" id="hud-next-btn">
-                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line></svg>
-                       </button>
-                       <button type="button" class="hud-control-btn" id="hud-loop-btn" title="Loop Current Video">
-                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
-                       </button>
-                       
-                       <!-- Progress Bar -->
-                       <div class="hud-progress-container">
-                         <span class="hud-time" id="hud-current-time">0:00</span>
-                         <div class="hud-progress-bar-wrapper" id="hud-progress-wrapper">
-                           <div class="hud-progress-bar" id="hud-progress-bar" style="width: 0%"></div>
-                         </div>
-                         <span class="hud-time" id="hud-total-time">0:00</span>
-                       </div>
-                     </div>
-                   </div>
-                 </div>
+              <div class="video-container" id="player-container">
+                <div id="youtube-player"></div>
+                <video id="html5-video-player" class="custom-video-player hidden" playsinline></video>
                 
-                <div class="player-controls">
-                  <div class="progress-container">
-                    <span id="current-time" class="time-label">0:00</span>
-                    <input type="range" id="progress-bar" min="0" max="100" value="0" step="1" />
-                    <span id="total-time" class="time-label">0:00</span>
+                <!-- Fullscreen Overlay HUD -->
+                <div id="fullscreen-hud" class="fullscreen-hud hidden">
+                  <div class="hud-top-bar">
+                    <div class="hud-song-info glass-card">
+                      <span class="hud-song-title" id="hud-title">No video playing currently</span>
+                      <span class="hud-song-meta" id="hud-meta"></span>
+                    </div>
+                    <button class="hud-exit-btn" id="hud-exit-btn" title="Exit Fullscreen">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7"/></svg>
+                    </button>
                   </div>
                   
-                  <div class="control-buttons">
-                    <button type="button" id="seek-back-btn" class="btn btn-control btn-seek-back" title="Rewind 5s (Left Arrow)" disabled>
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
+                  <div class="hud-bottom-bar glass-card">
+                    <button type="button" class="hud-control-btn" id="hud-seek-back-btn" title="Rewind 5s">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
                     </button>
-                    <button type="button" id="play-pause-btn" class="btn btn-control btn-play" disabled>
-                      <svg id="play-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                      <svg id="pause-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                    <button type="button" class="hud-control-btn" id="hud-play-btn">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                     </button>
-                    <button type="button" id="seek-forward-btn" class="btn btn-control btn-seek-forward" title="Forward 5s (Right Arrow)" disabled>
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
+                    <button type="button" class="hud-control-btn" id="hud-seek-forward-btn" title="Forward 5s">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
                     </button>
-                    <button type="button" id="next-btn" class="btn btn-control btn-next" disabled>
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line></svg>
+                    <button type="button" class="hud-control-btn" id="hud-next-btn">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line></svg>
                     </button>
-                    <button type="button" id="loop-btn" class="btn btn-control btn-loop" title="Loop Current Video" disabled>
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+                    <button type="button" class="hud-control-btn" id="hud-loop-btn" title="Toggle Loop Video">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
                     </button>
-                    <button type="button" id="fullscreen-btn" class="btn btn-control btn-fullscreen" title="Full Screen" disabled>
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
-                    </button>
-                    <button type="button" id="save-current-song-playlist-btn" class="btn btn-control" title="Save Playing Song to Playlist" disabled style="color: var(--color-secondary);">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                    </button>
+                    
+                    <div class="hud-progress-container">
+                      <span class="hud-time" id="hud-current-time">0:00</span>
+                      <div class="hud-progress-bar-wrapper" id="hud-progress-wrapper">
+                        <div class="hud-progress-bar" id="hud-progress-bar" style="width: 0%"></div>
+                      </div>
+                      <span class="hud-time" id="hud-total-time">0:00</span>
+                    </div>
                   </div>
+                </div>
+              </div>
+             
+              <div class="player-controls">
+                <div class="progress-container">
+                  <span id="current-time" class="time-label">0:00</span>
+                  <input type="range" id="progress-bar" min="0" max="100" value="0" step="1" />
+                  <span id="total-time" class="time-label">0:00</span>
+                </div>
+                
+                <div class="control-buttons">
+                  <button type="button" id="seek-back-btn" class="btn btn-control btn-seek-back" title="Rewind 5s" disabled>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
+                  </button>
+                  <button type="button" id="play-pause-btn" class="btn btn-control btn-play" disabled>
+                    <svg id="play-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    <svg id="pause-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                  </button>
+                  <button type="button" id="seek-forward-btn" class="btn btn-control btn-seek-forward" title="Forward 5s" disabled>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
+                  </button>
+                  <button type="button" id="next-btn" class="btn btn-control btn-next" disabled>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line></svg>
+                  </button>
+                  <button type="button" id="loop-btn" class="btn btn-control btn-loop" title="Toggle Loop Video" disabled>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+                  </button>
+                  <button type="button" id="fullscreen-btn" class="btn btn-control btn-fullscreen" title="Full Screen" disabled>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+                  </button>
                 </div>
               </div>
             </section>
 
             <!-- Playlist Queue Card -->
             <section class="glass-card playlist-card">
-              <h2 class="card-title">Playlist Queue</h2>
-              <p class="card-description">Upcoming songs synced across all active sessions</p>
+              <h2 class="card-title">Upcoming Video Queue</h2>
+              <p class="card-description">Videos queued for real-time synchronized playback</p>
               <div class="playlist-container" id="playlist-queue-list">
-                <div class="playlist-placeholder">Queue is empty. Search and add some music!</div>
+                <div class="playlist-placeholder">Queue is empty. Search YouTube or upload a video file to get started!</div>
               </div>
             </section>
           </div>
 
-          <!-- Right Column: Search, Stats & Logs -->
+          <!-- Right Column: Discussion, Upload & Search -->
           <div class="side-column">
-            <!-- Search Music Card -->
-            <section class="glass-card search-card">
-              <h2 class="card-title">Search Music</h2>
-              <p class="card-description">Find songs on YouTube to add to the shared playlist</p>
-              <div class="search-bar">
-                <input type="text" id="search-input" placeholder="Search song title, artist..." />
-                <button id="search-btn" class="btn btn-primary">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                  Search
-                </button>
-              </div>
-              <div class="search-bar" style="margin-top: 0.75rem;">
-                <input type="text" id="id-input" placeholder="Or paste YouTube Video ID or URL (e.g. dQw4w9WgXcQ)..." />
-                <button id="id-btn" class="btn btn-primary" style="background: var(--color-secondary); box-shadow: 0 8px 24px var(--color-secondary-glow);">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-                  Fetch
-                </button>
-              </div>
-              <div class="search-results" id="search-results-list">
-                <div class="search-placeholder">Type keywords and click Search...</div>
-              </div>
-            </section>
-
-            <!-- My Saved Playlists Card -->
-            <section class="glass-card user-playlists-card">
+            <!-- Real-Time Discussion Card -->
+            <section class="glass-card discussion-card">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                <h2 class="card-title" style="margin-bottom: 0;">My Saved Playlists</h2>
-                <button type="button" id="open-create-playlist-btn" class="btn btn-primary" style="font-size: 0.75rem; padding: 0.35rem 0.65rem; background: var(--color-secondary); box-shadow: 0 4px 14px var(--color-secondary-glow);">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                  New Playlist
+                <h2 class="card-title" style="margin-bottom: 0;">Real-Time Discussion</h2>
+              </div>
+              <p class="card-description">Share thoughts & tag video timestamps in real-time</p>
+              
+              <div class="discussion-messages-container" id="discussion-messages-list">
+                <div class="discussion-placeholder">No discussion messages yet. Send the first message!</div>
+              </div>
+              
+              <form id="discussion-form" class="discussion-input-area">
+                <div class="discussion-input-wrapper">
+                  <input type="text" id="discussion-input" placeholder="Type a message..." autocomplete="off" />
+                  <button type="submit" id="discussion-send-btn" class="btn btn-primary btn-send-chat">Send</button>
+                </div>
+              </form>
+            </section>
+
+            <!-- Upload Custom Video Card -->
+            <section class="glass-card upload-card">
+              <h2 class="card-title">Upload Custom Video</h2>
+              <p class="card-description">Upload local video files (MP4, WebM...) to watch in sync</p>
+              
+              <div class="upload-area">
+                <input type="file" id="video-file-input" accept="video/mp4,video/webm,video/mkv" class="hidden" />
+                <button type="button" id="select-video-file-btn" class="btn btn-primary btn-block">
+                  Choose Video File
                 </button>
-              </div>
-              <p class="card-description">Your personal music collections</p>
-              <div id="user-playlists-list" class="user-playlists-container">
-                <div class="search-placeholder">Log in to view and save personal playlists</div>
+                <div id="selected-file-name" class="selected-file-name hidden"></div>
               </div>
             </section>
 
-            <!-- Room Info Card -->
-            <section class="glass-card info-card">
-              <h2 class="card-title">Room Details</h2>
-              <div class="info-list">
-                <div class="info-item">
-                  <span class="info-label">Room Code</span>
-                  <div style="display: flex; gap: 0.5rem; align-items: center;">
-                    <span class="info-value code" id="room-code-display" style="cursor: pointer;" title="Click to copy room invite link">N/A</span>
-                    <button id="copy-room-link-btn" class="btn btn-icon" title="Copy Invite Link" style="width: 28px; height: 28px;">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
-                    </button>
-                  </div>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">Active Users</span>
-                  <span class="info-value code" id="room-users-count">0</span>
-                </div>
-                <div class="info-item" id="change-room-item">
-                  <button id="leave-room-btn" class="btn btn-danger-outline" style="width: 100%; font-size: 0.8rem; padding: 0.35rem 0.75rem;">Leave Room</button>
-                </div>
+            <!-- Add / Search YouTube Video Card -->
+            <section class="glass-card search-card">
+              <h2 class="card-title">Add / Search YouTube Video</h2>
+              <p class="card-description">Paste direct Video ID / URL OR search by title</p>
+
+              <!-- Direct Video ID / URL Input -->
+              <div class="search-bar" style="margin-bottom: 0.65rem;">
+                <input type="text" id="direct-video-input" placeholder="Paste Video ID or URL (e.g. dQw4w9WgXcQ)..." />
+                <button id="add-direct-video-btn" class="btn btn-primary" style="white-space: nowrap; font-size: 0.85rem;">+ Add Video</button>
+              </div>
+              
+              <!-- Keyword Search Input -->
+              <div class="search-bar">
+                <input type="text" id="search-input" placeholder="Or search by keyword..." />
+                <button id="search-btn" class="btn btn-secondary-outline" style="white-space: nowrap; font-size: 0.85rem;">Search API</button>
+              </div>
+              <div class="search-results" id="search-results-list" style="margin-top: 0.65rem;">
+                <div class="search-placeholder">Type keywords or paste direct YouTube link...</div>
               </div>
             </section>
 
-            <!-- Active Listeners Card -->
+            <!-- Active Members Card -->
             <section class="glass-card listeners-card">
-              <h2 class="card-title">Active Listeners</h2>
-              <p class="card-description">People synced in this room</p>
+              <h2 class="card-title">Active Members (<span id="room-users-count">0</span>)</h2>
               <div class="listeners-container" id="listeners-list">
                 <div class="listener-item">
                   <span class="status-dot online"></span>
@@ -285,13 +312,12 @@
         </main>
       </div>
     </div>
-    
-    <!-- Auth Modal Overlay -->
-    <div id="auth-modal" class="modal-overlay hidden">
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal-overlay hidden" style="display: none !important;">
       <div class="glass-card modal-card">
         <button id="close-auth-modal-btn" class="btn-close">&times;</button>
         
-        <!-- Toggle Tabs -->
         <div class="modal-tabs">
           <button id="tab-login" class="tab-btn active">Login</button>
           <button id="tab-register" class="tab-btn">Register</button>
@@ -308,7 +334,7 @@
             <input type="password" id="login-password" required placeholder="Enter password..." autocomplete="current-password" />
           </div>
           <div style="text-align: right; margin-top: -0.5rem; margin-bottom: 1rem;">
-            <a href="#" id="forgot-password-link" style="color: var(--color-secondary); font-size: 0.8rem; text-decoration: none;">Forgot password?</a>
+            <a href="#" id="forgot-password-link" style="color: var(--color-text-main); font-size: 0.8rem; text-decoration: underline;">Forgot password?</a>
           </div>
           <div id="login-error-msg" class="error-msg hidden"></div>
           <button type="submit" id="login-submit-btn" class="btn btn-primary btn-block">Login</button>
@@ -322,23 +348,22 @@
           </div>
           <div class="form-group">
             <label for="register-email">Email</label>
-            <input type="email" id="register-email" required placeholder="Enter your email address..." autocomplete="email" />
+            <input type="email" id="register-email" required placeholder="Enter email address..." autocomplete="email" />
           </div>
           <div class="form-group">
             <label for="register-password">Password</label>
             <input type="password" id="register-password" required placeholder="At least 6 characters..." autocomplete="new-password" />
           </div>
           <div id="register-error-msg" class="error-msg hidden"></div>
-          <button type="submit" id="register-submit-btn" class="btn btn-primary btn-block" style="background: var(--color-secondary); box-shadow: 0 8px 24px var(--color-secondary-glow);">Send Registration OTP</button>
+          <button type="submit" id="register-submit-btn" class="btn btn-primary btn-block">Send OTP</button>
         </form>
 
         <!-- Forgot Password Form -->
         <form id="forgot-form" class="auth-form hidden">
           <h3 style="font-size: 1rem; margin-bottom: 1rem; color: #fff;">Reset Password</h3>
-          <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 1.25rem;">Enter your email address to receive a 6-digit password reset verification code.</p>
           <div class="form-group">
             <label for="forgot-email">Email Address</label>
-            <input type="email" id="forgot-email" required placeholder="Enter your registered email..." autocomplete="email" />
+            <input type="email" id="forgot-email" required placeholder="Enter registered email..." autocomplete="email" />
           </div>
           <div id="forgot-error-msg" class="error-msg hidden"></div>
           <button type="submit" id="forgot-submit-btn" class="btn btn-primary btn-block">Send Reset Code</button>
@@ -357,7 +382,6 @@
             <input type="text" id="otp-code-input" maxlength="6" placeholder="000000" style="text-align: center; letter-spacing: 5px; font-weight: 700; font-size: 1.25rem;" />
           </div>
 
-          <!-- New password field for Forgot Password Reset flow -->
           <div class="form-group hidden" id="otp-new-password-group">
             <label for="otp-new-password">New Password</label>
             <input type="password" id="otp-new-password" placeholder="At least 6 characters..." autocomplete="new-password" />
@@ -372,125 +396,76 @@
         </div>
       </div>
     </div>
-    
-    <!-- Room Selector Screen Overlay -->
-    <div id="room-selection-overlay" class="modal-overlay">
-      <div class="glass-card room-selection-card">
-        <h2 class="room-title">Join a Music Party</h2>
-        <p class="room-subtitle">Create a new listening room or join an existing one to sync playback with friends.</p>
-        
-        <div class="room-actions-group">
-          <button id="create-room-btn" class="btn btn-primary btn-block">Create New Room</button>
-          
-          <div class="divider"><span>OR</span></div>
-          
-          <div class="join-room-form">
-            <input type="text" id="room-code-input" placeholder="Enter Room Code (e.g., party-123)..." />
-            <button id="join-room-btn" class="btn btn-primary">Join Room</button>
-          </div>
-          <div id="room-error-msg" class="error-msg hidden"></div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Create Playlist Modal -->
-    <div id="create-playlist-modal" class="modal-overlay hidden">
+    <!-- Create Room Modal -->
+    <div id="create-room-modal" class="modal-overlay hidden" style="display: none !important;">
       <div class="glass-card modal-card">
-        <button type="button" id="close-create-playlist-modal-btn" class="btn-close">&times;</button>
-        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem; color: #fff;">Create New Playlist</h3>
-        <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 1.25rem;">Save your favorite YouTube music into your personal collection.</p>
+        <button type="button" id="close-create-room-modal-btn" class="btn-close">&times;</button>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem; color: #fff;">Create New Persistent Room</h3>
+        <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 1.25rem;">Set up a watch room saved to your account.</p>
 
-        <form id="create-playlist-form">
+        <form id="create-room-form">
           <div class="form-group">
-            <label for="playlist-title-input">Playlist Title</label>
-            <input type="text" id="playlist-title-input" required placeholder="e.g. My Favorite Jams, Chill Lofi..." />
+            <label for="room-name-input">Room Name</label>
+            <input type="text" id="room-name-input" required placeholder="e.g. Study Session, Movie Night..." />
           </div>
           <div class="form-group">
-            <label for="playlist-desc-input">Description (Optional)</label>
-            <input type="text" id="playlist-desc-input" placeholder="e.g. Best tracks for working or relaxing" />
+            <label for="room-desc-input">Description (Optional)</label>
+            <input type="text" id="room-desc-input" placeholder="e.g. Watch together with friends" />
           </div>
-          <div id="create-playlist-error" class="error-msg hidden"></div>
-          <button type="submit" id="create-playlist-submit-btn" class="btn btn-primary btn-block">Create Playlist</button>
+          <div id="create-room-error" class="error-msg hidden"></div>
+          <button type="submit" id="create-room-submit-btn" class="btn btn-primary btn-block">Create & Join Room</button>
         </form>
       </div>
     </div>
 
-    <!-- Edit Playlist Modal -->
-    <div id="edit-playlist-modal" class="modal-overlay hidden">
+    <!-- Join Room Modal -->
+    <div id="join-room-modal" class="modal-overlay hidden" style="display: none !important;">
       <div class="glass-card modal-card">
-        <button type="button" id="close-edit-playlist-modal-btn" class="btn-close">&times;</button>
-        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem; color: #fff;">Edit Playlist</h3>
-        <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 1.25rem;">Update title and description of your playlist.</p>
+        <button type="button" id="close-join-room-modal-btn" class="btn-close">&times;</button>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem; color: #fff;">Join a Room</h3>
+        <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 1.25rem;">Enter a room code to join a watch party.</p>
 
-        <form id="edit-playlist-form">
-          <input type="hidden" id="edit-playlist-id-input" />
+        <form id="join-room-form">
           <div class="form-group">
-            <label for="edit-playlist-title-input">Playlist Title</label>
-            <input type="text" id="edit-playlist-title-input" required placeholder="e.g. My Favorite Jams, Chill Lofi..." />
+            <label for="join-room-code-input">Room Code</label>
+            <input type="text" id="join-room-code-input" required placeholder="e.g. room-abc123" autocomplete="off" style="letter-spacing: 0.05em; font-weight: 600;" />
           </div>
-          <div class="form-group">
-            <label for="edit-playlist-desc-input">Description (Optional)</label>
-            <input type="text" id="edit-playlist-desc-input" placeholder="e.g. Best tracks for working or relaxing" />
+          <div id="join-room-preview" class="hidden" style="margin-bottom: 1rem; padding: 0.85rem 1rem; background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.3); border-radius: 10px;">
+            <div style="font-weight: 600; color: #fff; font-size: 0.95rem;" id="join-room-preview-name"></div>
+            <div style="color: var(--color-text-muted); font-size: 0.8rem; margin-top: 0.25rem;" id="join-room-preview-host"></div>
+            <div style="color: var(--color-text-muted); font-size: 0.8rem;" id="join-room-preview-desc"></div>
           </div>
-          <div id="edit-playlist-error" class="error-msg hidden"></div>
-          <button type="submit" id="edit-playlist-submit-btn" class="btn btn-primary btn-block">Save Changes</button>
+          <div id="join-room-error" class="error-msg hidden"></div>
+          <div style="display: flex; gap: 0.75rem; margin-top: 0.25rem;">
+            <button type="button" id="join-room-lookup-btn" class="btn btn-secondary-outline btn-block">Look Up Room</button>
+            <button type="submit" id="join-room-submit-btn" class="btn btn-primary btn-block" disabled>Enter Room</button>
+          </div>
         </form>
       </div>
     </div>
 
-    <!-- Add Song to Playlist Modal -->
-    <div id="add-to-playlist-modal" class="modal-overlay hidden">
-      <div class="glass-card modal-card" style="max-width: 440px;">
-        <button type="button" id="close-add-to-playlist-modal-btn" class="btn-close">&times;</button>
-        <h3 style="font-size: 1.15rem; margin-bottom: 0.25rem; color: #fff;">Add to Playlist</h3>
-        <div id="add-to-playlist-song-preview" style="font-size: 0.85rem; color: var(--color-secondary); margin-bottom: 1.25rem; word-break: break-word;"></div>
-
-        <div id="add-to-playlist-list" class="user-playlists-container" style="max-height: 250px; overflow-y: auto; margin-bottom: 1rem;">
-          <div class="search-placeholder">Loading playlists...</div>
-        </div>
-
-        <button type="button" id="modal-quick-create-playlist-btn" class="btn btn-danger-outline btn-block" style="border-color: var(--color-secondary); color: var(--color-secondary);">
-          + Create New Playlist
-        </button>
-      </div>
-    </div>
-
-    <!-- View Playlist Details Modal -->
-    <div id="view-playlist-modal" class="modal-overlay hidden">
-      <div class="glass-card modal-card" style="max-width: 580px; width: 90%;">
-        <button type="button" id="close-view-playlist-modal-btn" class="btn-close">&times;</button>
-        
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0.75rem;">
-          <div>
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-              <h3 id="view-playlist-title" style="font-size: 1.3rem; color: #fff; margin-bottom: 0;">Playlist Title</h3>
-              <button type="button" id="open-edit-playlist-modal-btn" class="btn btn-icon btn-icon-sm" title="Edit Playlist Title & Description" style="width: 26px; height: 26px;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-              </button>
-            </div>
-            <p id="view-playlist-desc" style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 0; margin-top: 0.25rem;"></p>
+    <!-- Edit Room Modal -->
+    <div id="edit-room-modal" class="modal-overlay hidden" style="display: none !important;">
+      <div class="glass-card modal-card">
+        <button type="button" id="close-edit-room-modal-btn" class="btn-close">&times;</button>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem; color: #fff;">Edit Room Details</h3>
+        <form id="edit-room-form">
+          <input type="hidden" id="edit-room-id-input" />
+          <div class="form-group">
+            <label for="edit-room-name-input">Room Name</label>
+            <input type="text" id="edit-room-name-input" required placeholder="e.g. Anime Night..." />
           </div>
-          <button type="button" id="queue-entire-playlist-btn" class="btn btn-primary" style="white-space: nowrap; font-size: 0.8rem; padding: 0.4rem 0.85rem;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-            Queue All to Room
-          </button>
-        </div>
-
-        <!-- Add Song to this Playlist directly input box -->
-        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-          <input type="text" id="playlist-add-song-input" placeholder="Paste YouTube Video ID or URL to add directly..." style="font-size: 0.8rem; padding: 0.45rem 0.75rem;" />
-          <button type="button" id="playlist-add-song-btn" class="btn btn-primary" style="font-size: 0.75rem; white-space: nowrap; padding: 0.45rem 0.75rem; background: var(--color-secondary);">
-            + Add Song
-          </button>
-        </div>
-
-        <div id="view-playlist-items-container" class="playlist-container" style="max-height: 360px; overflow-y: auto;">
-          <div class="playlist-placeholder">No songs in this playlist yet. Search music to add!</div>
-        </div>
+          <div class="form-group">
+            <label for="edit-room-desc-input">Description (Optional)</label>
+            <input type="text" id="edit-room-desc-input" placeholder="e.g. Updated description" />
+          </div>
+          <div id="edit-room-error" class="error-msg hidden"></div>
+          <button type="submit" id="edit-room-submit-btn" class="btn btn-primary btn-block">Save Changes</button>
+        </form>
       </div>
     </div>
-    
+
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
-

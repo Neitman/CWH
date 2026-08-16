@@ -1,0 +1,253 @@
+% !TEX program = xelatex
+\documentclass[aspectratio=169,11pt]{beamer}
+\usepackage{fontspec}
+\usepackage[vietnamese]{babel}
+\setmainfont{Times New Roman}
+\setsansfont{Arial}
+
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+
+% Cấu hình Theme Beamer
+\usetheme{Madrid}
+\usecolortheme{default}
+\setbeamertemplate{navigation symbols}{} % Ẩn thanh điều hướng
+\setbeamertemplate{footline}[frame number] % Hiển thị số trang
+
+% Định nghĩa màu sắc chủ đạo
+\definecolor{primary}{RGB}{30, 64, 120}
+\definecolor{secondary}{RGB}{220, 53, 69}
+\setbeamercolor{structure}{fg=primary}
+\setbeamercolor{title}{fg=white, bg=primary}
+\setbeamercolor{frametitle}{fg=white, bg=primary}
+
+% Thông tin trang bìa
+\title[BÁO CÁO THỰC TẬP]{BÁO CÁO KẾT THÚC THỰC TẬP CHUYÊN NGÀNH}
+\subtitle{\textbf{Ứng dụng WebSocket trong việc xây dựng trang web xem video đồng bộ trạng thái độ trễ thấp}}
+\author[Tạ Tiến Nam]{Sinh viên: \textbf{Tạ Tiến Nam} \\ Mã SV: 23000143 -- Lớp: K68A2 Toán Tin}
+\institute[HUS - VNU]{Khoa Toán - Cơ - Tin học \\ Trường Đại học Khoa học Tự nhiên, ĐHQGHN}
+\date{Hà Nội, Năm 2026}
+
+\begin{document}
+
+% ==================== SLIDE BÌA ====================
+\begin{frame}
+    \titlepage
+\end{frame}
+
+% ==================== SLIDE MỤC LỤC ====================
+\begin{frame}{Nội dung trình bày}
+    \tableofcontents
+\end{frame}
+
+% ==================== PHẦN 1 ====================
+\section{PHẦN 1: GIỚI THIỆU}
+
+\begin{frame}{1.1. Phát biểu bài toán \& Công việc được giao}
+    \begin{block}{Đặt vấn đề thực tế}
+        \begin{itemize}
+            \item Nhu cầu xem video nhóm từ xa (Co-watching) ngày càng gia tăng.
+            \item Các giải pháp thủ công (đếm ngược 3-2-1) bộc lộ hạn chế lớn: lệch khung hình do trễ mạng ($2s - 10s$) và mất tính tương tác khi tạm dừng video.
+        \end{itemize}
+    \end{block}
+    
+    \vspace{0.3cm}
+    \begin{block}{Công việc được giao}
+        \begin{itemize}
+            \item Nghiên cứu \& phát triển ứng dụng Web thời gian thực đồng bộ trạng thái xem video nhóm với độ trễ siêu thấp ($<1s$).
+            \item Triển khai xác thực bảo mật JWT \& mã hóa mật khẩu Bcrypt.
+            \item Quản lý phòng xem, danh sách hàng đợi (Queue) và trò chuyện (Chat) đính kèm mốc thời gian (Timestamp).
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\begin{frame}{1.2. Khảo sát công nghệ truyền thông thời gian thực}
+    \begin{columns}[T]
+        \begin{column}{0.48\textwidth}
+            \begin{alertblock}{HTTP Polling (Truyền thống)}
+                \begin{itemize}
+                    \item Client gửi HTTP Request liên tục.
+                    \item \textbf{Nhược điểm:} Header overhead lớn ($500B - 2KB$/req), gây quá tải CPU/RAM máy chủ.
+                    \item \textbf{Độ trễ cao:} $1s - 5s$, không thể chủ động Push dữ liệu từ Server.
+                \end{itemize}
+            \end{alertblock}
+        \end{column}
+        
+        \begin{column}{0.48\textwidth}
+            \begin{exampleblock}{WebSocket \& Socket.IO (Lựa chọn)}
+                \begin{itemize}
+                    \item Kênh truyền song công (Full-duplex) trên 1 kết nối TCP duy nhất.
+                    \item \textbf{Ưu điểm:} Overhead cực nhỏ ($2B - 10B$), độ trễ siêu thấp ($<100ms$).
+                    \item Server chủ động Push dữ liệu; Socket.IO hỗ trợ auto-reconnect \& quản lý Room.
+                \end{itemize}
+            \end{exampleblock}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{1.3. Khảo sát Bảo mật \& Kiến trúc Cơ sở dữ liệu}
+    \begin{block}{Xác thực \& Bảo mật (JWT + Bcrypt)}
+        \begin{itemize}
+            \item \textbf{JWT (JSON Web Token):} Phi trạng thái (Stateless), chữ ký số HMAC-SHA256. Dễ dàng đính kèm trong REST Header và WebSocket Handshake (`socket.handshake.auth.token`).
+            \item \textbf{Bcrypt:} Hàm băm mật khẩu 1 chiều tích hợp Salt ngẫu nhiên chống vét cạn.
+        \end{itemize}
+    \end{block}
+    
+    \vspace{0.2cm}
+    \begin{block}{Kiến trúc Cơ sở dữ liệu Lai (Hybrid Database)}
+        \begin{itemize}
+            \item \textbf{PostgreSQL (RDBMS):} Lưu trữ bền vững tài khoản người dùng, thông tin phòng xem, lịch sử tin nhắn trò chuyện.
+            \item \textbf{Redis (In-memory Cache):} Lưu trữ trạng thái phát thời gian thực (`progress`, `isPlaying`, `lastUpdated`) với tốc độ phản hồi $<1ms$.
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+% ==================== PHẦN 2 ====================
+\section{PHẦN 2: CÔNG VIỆC TRIỂN KHAI}
+
+\begin{frame}{2.1. Phân tích \& Thiết kế Cơ sở dữ liệu}
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{|p{3cm}|p{5cm}|p{4.5cm}|}
+    \hline
+    \textbf{Tên bảng} & \textbf{Các trường chính} & \textbf{Mô tả chức năng} \\ \hline
+    \texttt{users} & \texttt{id, username, password, email, display\_name} & Lưu tài khoản người dùng \\ \hline
+    \texttt{user\_rooms} & \texttt{id, room\_id, name, description, user\_id} & Quản lý thông tin phòng \\ \hline
+    \texttt{user\_playlists} & \texttt{id, user\_id, title, description} & Danh sách phát cá nhân \\ \hline
+    \texttt{user\_playlist\_items} & \texttt{id, playlist\_id, song\_id, title, duration} & Chi tiết bài hát trong queue \\ \hline
+    \texttt{discussion\_messages} & \texttt{id, room\_id, user\_id, message, video\_timestamp} & Lưu lịch sử trò chuyện \\ \hline
+    \end{tabular}
+    \caption{Cấu trúc 5 bảng dữ liệu PostgreSQL chính}
+    \end{table}
+\end{frame}
+
+\begin{frame}{2.2. Triển khai Module Xác thực \& Quản lý phòng xem}
+    \begin{itemize}
+        \item \textbf{REST API Authentication:}
+        \begin{itemize}
+            \item Route Đăng ký, Đăng nhập trả về Token JWT mã hóa.
+            \item Middleware `authenticateToken` giải mã Header `Authorization: Bearer <token>`.
+        \end{itemize}
+        \vspace{0.3cm}
+        \item \textbf{WebSocket Handshake \& Room Management:}
+        \begin{itemize}
+            \item Kiểm tra Token JWT ngay tại thời điểm bắt tay Handshake kết nối Socket.
+            \item Nhóm các kết nối Socket vào từng phòng xem riêng biệt qua lệnh `socket.join(roomId)`.
+            \item Tự động đồng bộ và phát danh sách thành viên đang online trong phòng.
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{2.3. Triển khai Đồng bộ Video \& Thuật toán Khử trễ}
+    \begin{block}{Khắc phục vòng lặp sự kiện (Event Loop Feedback Loop)}
+        Client nhận lệnh đồng bộ từ Server và gọi API trình phát (`seekTo`, `pauseVideo`) sẽ làm kích hoạt lại sự kiện `onStateChange`. Hệ thống sử dụng \textbf{cờ `isSyncing = true`} để tạm dừng phát sự kiện ngược lên Server trong $300ms$.
+    \end{block}
+    
+    \vspace{0.2cm}
+    \begin{block}{Thuật toán bù sai lệch thời gian phát (Drift Compensation)}
+        Khi người dùng mới vào phòng, Server tự động tính thời gian video đã trôi qua dựa trên mốc thời gian lưu trong Redis:
+        \[ \text{progress} = \text{progress\_gốc} + \frac{\text{Date.now()} - \text{lastUpdated}}{1000} \]
+        Đảm bảo mọi thành viên trong phòng luôn xem đúng từng khung hình.
+    \end{block}
+\end{frame}
+
+\begin{frame}{2.4. Triển khai Module Trò chuyện nhóm (Chat Timestamp)}
+    \begin{columns}[T]
+        \begin{column}{0.5\textwidth}
+            \textbf{\textcolor{primary}{Gửi tin nhắn đính kèm Timestamp}}
+            \begin{itemize}
+                \item Server tự động trích xuất `videoTimestamp` hiện tại của video khi Client gửi tin nhắn.
+                \item Lưu bản ghi vào PostgreSQL và broadcast tới tất cả thành viên trong phòng.
+            \end{itemize}
+        \end{column}
+        
+        \begin{column}{0.5\textwidth}
+            \textbf{\textcolor{primary}{Tương tác nhảy mốc thời gian}}
+            \begin{itemize}
+                \item Tin nhắn hiển thị kèm mốc thời gian (ví dụ \texttt{02:45}).
+                \item Thành viên nhấp vào mốc thời gian $\rightarrow$ Trình phát video lập tức nhảy tới khoảnh khắc đó.
+            \end{itemize}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+% ==================== PHẦN 3 ====================
+\section{PHẦN 3: CÁC KẾT QUẢ ĐẠT ĐƯỢC}
+
+\begin{frame}{3.1. Giới thiệu sản phẩm phần mềm}
+    \begin{center}
+        \textbf{\Large Giao diện Ứng dụng Web Single Page Application (SPA)}
+    \end{center}
+    \vspace{0.3cm}
+    \begin{enumerate}
+        \item \textbf{Màn hình Đăng nhập / Đăng ký:} Giao diện hiện đại, xác thực dữ liệu đầu vào và lưu trữ Token bảo mật.
+        \item \textbf{Màn hình Dashboard Quản lý phòng:} Tạo phòng xem mới và truy cập nhanh bằng Mã phòng (Room ID).
+        \item \textbf{Màn hình Phòng xem video trực tuyến:} Trình phát HTML5 / YouTube Player responsive, Khung danh sách phát bài hát (Queue), Khung trò chuyện nhóm đính kèm Timestamp và Danh sách thành viên online.
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}{3.2. Kết quả kiểm thử \& Phân tích 4 lỗi kỹ thuật}
+    \small
+    \begin{table}[h!]
+    \centering
+    \begin{tabular}{|c|p{5cm}|p{5.5cm}|c|}
+    \hline
+    \textbf{STT} & \textbf{Kịch bản kiểm thử (Test Case)} & \textbf{Kết quả kỳ vọng} & \textbf{Trạng thái} \\ \hline
+    1 & Đăng ký \& Đăng nhập tài khoản & Tạo Token JWT, lưu vào LocalStorage & PASSED \\ \hline
+    2 & Tạo phòng mới \& Nhận Room ID & Tạo bản ghi mới trong PostgreSQL & PASSED \\ \hline
+    3 & Kết nối WebSocket Handshake & Xác thực JWT Token, join Room & PASSED \\ \hline
+    4 & Thêm video vào Queue & Đồng bộ danh sách phát toàn phòng & PASSED \\ \hline
+    5 & Đồng bộ sự kiện Play / Pause / Seek & Các Client đồng bộ trạng thái trong $<300ms$ & PASSED \\ \hline
+    \end{tabular}
+    \end{table}
+    
+    \vspace{0.1cm}
+    \textbf{\textcolor{primary}{4 Lỗi kỹ thuật đã xử lý triệt để:}} 
+    (1) Vòng lặp sự kiện `isSyncing`; (2) Trôi thời gian phát `Drift Compensation`; (3) Rò rỉ tệp tin đĩa `cleanupCustomVideoFile()`; (4) JWT hết hạn `auth-error`.
+\end{frame}
+
+\begin{frame}{3.3. Đánh giá độ trễ \& Bài học kinh nghiệm}
+    \begin{columns}[T]
+        \begin{column}{0.48\textwidth}
+            \begin{block}{Đánh giá độ trễ (Latency Benchmark)}
+                \begin{itemize}
+                    \item \textbf{Mạng LAN / Localhost:} $25ms$
+                    \item \textbf{Wifi cáp quang:} $85ms$
+                    \item \textbf{Mạng di động 4G / Tunnel:} $210ms$
+                    \item \textit{Kết luận:} Độ trễ truyền đồng bộ luôn nhỏ hơn $300ms$ ($<1s$).
+                \end{itemize}
+            \end{block}
+        \end{column}
+        
+        \begin{column}{0.48\textwidth}
+            \begin{block}{Bài học kinh nghiệm cá nhân}
+                \begin{itemize}
+                    \item Thành thạo thiết kế hệ thống truyền thông hai chiều bất đồng bộ thời gian thực.
+                    \item Kỹ năng kết hợp CSDL quan hệ (PostgreSQL) và In-memory Cache (Redis).
+                    \item Tư duy phân tích và xử lý tận gốc lỗi kỹ thuật phát sinh.
+                \end{itemize}
+            \end{block}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+% ==================== KẾT LUẬN ====================
+\section{KẾT LUẬN}
+
+\begin{frame}{Kết luận \& Hướng phát triển}
+    \begin{block}{Tổng kết đề tài}
+        Đề tài đã hoàn thành xuất sắc các mục tiêu đề ra, giải quyết triệt để bài toán đồng bộ phiên xem video nhóm thời gian thực với độ trễ siêu thấp, đảm bảo tính bảo mật và trải nghiệm mượt mà.
+    \end{block}
+    
+    \vspace{0.5cm}
+    \begin{center}
+        \Huge \textbf{XIN TRÂN TRỌNG CẢM ƠN!} \\
+        \vspace{0.5cm}
+        \large Trân trọng cảm ơn Thầy Cô đã lắng nghe bài trình bày!
+    \end{center}
+\end{frame}
+
+\end{document}

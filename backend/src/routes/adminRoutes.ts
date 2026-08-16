@@ -69,12 +69,12 @@ router.get('/rooms', async (req: Request, res: Response) => {
   try {
     const io = req.app.get('io') as Server | undefined;
     
-    // Find all playlist keys in Redis (cwh:*:playlist)
-    const keys = await redis.keys('cwh:*:playlist');
+    // Find all playlist keys in Redis (wp:*:playlist)
+    const keys = await redis.keys('wp:*:playlist');
     const rooms: any[] = [];
 
     for (const key of keys) {
-      // Key format: cwh:room-xxxxxx:playlist
+      // Key format: wp:room-xxxxxx:playlist
       const parts = key.split(':');
       if (parts.length >= 3) {
         const roomId = parts[1];
@@ -119,11 +119,11 @@ router.delete('/rooms/:roomId', async (req: Request, res: Response) => {
   const { roomId } = req.params;
   try {
     // Delete Redis keys
-    const playlistKey = `cwh:${roomId}:playlist`;
-    const currentSongKey = `cwh:${roomId}:current_song`;
-    const playbackKey = `cwh:${roomId}:playback`;
-    const hostKey = `cwh:${roomId}:host`;
-    const permissionsKey = `cwh:${roomId}:write_permissions`;
+    const playlistKey = `wp:${roomId}:playlist`;
+    const currentSongKey = `wp:${roomId}:current_song`;
+    const playbackKey = `wp:${roomId}:playback`;
+    const hostKey = `wp:${roomId}:host`;
+    const permissionsKey = `wp:${roomId}:write_permissions`;
 
     await redis.del(playlistKey, currentSongKey, playbackKey, hostKey, permissionsKey);
 
@@ -196,10 +196,10 @@ router.delete('/users/:id', async (req: Request, res: Response) => {
   }
 });
 
-// 7. POST /redis/flush - Clear all Redis cache starting with cwh:
+// 7. POST /redis/flush - Clear all Redis cache starting with wp:
 router.post('/redis/flush', async (req: Request, res: Response) => {
   try {
-    const keys = await redis.keys('cwh:*');
+    const keys = await redis.keys('wp:*');
     if (keys.length > 0) {
       await redis.del(...keys);
     }

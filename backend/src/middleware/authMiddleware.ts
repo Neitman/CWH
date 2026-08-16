@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'cwh_super_secret_key_12345';
+const JWT_SECRET = process.env.JWT_SECRET || 'wp_super_secret_key_12345';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -23,6 +23,6 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     req.user = decoded;
     next();
   } catch (error) {
-    return res.status(403).json({ error: 'Invalid or expired token.' });
+    return res.status(401).json({ error: 'Invalid or expired token.', code: 'TOKEN_EXPIRED' });
   }
 };

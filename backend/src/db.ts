@@ -3,9 +3,13 @@ import { Pool } from 'pg';
 const pool = new Pool({
   host: process.env.PGHOST || 'localhost',
   port: parseInt(process.env.PGPORT || '5432'),
-  user: process.env.PGUSER || 'cwh_user',
-  password: process.env.PGPASSWORD || 'cwh_password',
-  database: process.env.PGDATABASE || 'cwh',
+  user: process.env.PGUSER || 'wp_user',
+  password: process.env.PGPASSWORD || 'wp_password',
+  database: process.env.PGDATABASE || 'wp',
+});
+
+pool.on('connect', (client) => {
+  client.query("SET TIMEZONE = 'Asia/Ho_Chi_Minh';").catch(() => {});
 });
 
 export const query = (text: string, params?: any[]) => {
@@ -28,9 +32,11 @@ export const initDb = async () => {
     await client.query(createUserTableQuery);
     console.log('Table "users" checked/created successfully.');
     
-    // Migration: ensure email column exists
+    // Migration: ensure email, avatar_url, display_name columns exist
     await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(100) UNIQUE;');
-    console.log('Column "email" verified/added successfully.');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500);');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS display_name VARCHAR(100);');
+    console.log('Columns "email", "avatar_url", "display_name" verified/added successfully.');
 
     // User Playlists Tables
     const createPlaylistsTableQuery = `
@@ -61,6 +67,36 @@ export const initDb = async () => {
     `;
     await client.query(createPlaylistItemsTableQuery);
     console.log('Table "user_playlist_items" checked/created successfully.');
+
+    // Discussion / Chat Messages Table for STG Rooms
+    const createDiscussionMessagesTableQuery = `
+      CREATE TABLE IF NOT EXISTS discussion_messages (
+        id SERIAL PRIMARY KEY,
+        room_id VARCHAR(100) NOT NULL,
+        user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        username VARCHAR(50) NOT NULL,
+        message TEXT NOT NULL,
+        video_timestamp INTEGER DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    await client.query(createDiscussionMessagesTableQuery);
+    console.log('Table "discussion_messages" checked/created successfully.');
+
+    // User Rooms Table for persistent room management
+    const createRoomsTableQuery = `
+      CREATE TABLE IF NOT EXISTS user_rooms (
+        id SERIAL PRIMARY KEY,
+        room_id VARCHAR(100) UNIQUE NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+    await client.query(createRoomsTableQuery);
+    console.log('Table "user_rooms" checked/created successfully.');
     
     client.release();
   } catch (error) {

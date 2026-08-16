@@ -1,13 +1,67 @@
 import { Router, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 import { query } from '../db';
 import { authenticateToken, AuthRequest } from '../middleware/authMiddleware';
 import redis from '../config/redis';
 import { sendOTPEmail, sendWelcomeEmail } from '../services/emailService';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'cwh_super_secret_key_12345';
+const JWT_SECRET = process.env.JWT_SECRET || 'wp_super_secret_key_12345';
+const REFRESH_SECRET = process.env.REFRESH_SECRET || 'wp_refresh_secret_key_67890';
+
+// Helper to generate 5-minute Access Token
+export function generateAccessToken(user: { id: number; username: string; display_name?: string; displayName?: string }) {
+  return jwt.sign(
+    { id: user.id, username: user.username, displayName: user.display_name || user.displayName || user.username },
+    JWT_SECRET,
+    { expiresIn: '5m' }
+  );
+}
+
+// Helper to generate 7-day Refresh Token and store in Redis
+export async function generateRefreshToken(user: { id: number; username: string }) {
+  const refreshToken = jwt.sign(
+    { id: user.id, username: user.username },
+    REFRESH_SECRET,
+    { expiresIn: '7d' }
+  );
+  await redis.setex(`wp:refreshtoken:${user.id}`, 7 * 86400, refreshToken);
+  return refreshToken;
+}
+
+// Multer Storage Setup for Avatars
+const avatarsDir = path.join(__dirname, '../../public/uploads/avatars');
+if (!fs.existsSync(avatarsDir)) {
+  fs.mkdirSync(avatarsDir, { recursive: true });
+}
+
+const avatarStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, avatarsDir);
+  },
+  filename: (req: any, file, cb) => {
+    const userId = req.user ? req.user.id : 'user';
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, `avatar-${userId}-${uniqueSuffix}${ext}`);
+  }
+});
+
+const avatarUpload = multer({
+  storage: avatarStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'));
+    }
+  }
+});
 
 // 1. Traditional Register endpoint (modified to include optional email)
 router.post('/register', async (req, res) => {
@@ -104,7 +158,7 @@ router.post('/register-send-otp', async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
     // Cache registration details in Redis (expires in 5 minutes)
-    const redisKey = `cwh:register-otp:${normalizedEmail}`;
+    const redisKey = `wp:register-otp:${normalizedEmail}`;
     const payload = JSON.stringify({ username: normalizedUsername, email: normalizedEmail, hashedPassword, otp });
     await redis.setex(redisKey, 300, payload);
 
@@ -129,7 +183,7 @@ router.post('/register-verify-otp', async (req, res) => {
   const normalizedEmail = email.trim().toLowerCase();
 
   try {
-    const redisKey = `cwh:register-otp:${normalizedEmail}`;
+    const redisKey = `wp:register-otp:${normalizedEmail}`;
     const dataStr = await redis.get(redisKey);
 
     if (!dataStr) {
@@ -156,16 +210,15 @@ router.post('/register-verify-otp', async (req, res) => {
     // Dispatch welcome email
     await sendWelcomeEmail(payload.email, payload.username);
 
-    // Generate JWT token automatically so they log in right away
-    const token = jwt.sign(
-      { id: newUser.id, username: newUser.username },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    // Generate Access Token (15m) & Refresh Token (7d)
+    const accessToken = generateAccessToken({ id: newUser.id, username: newUser.username });
+    const refreshToken = await generateRefreshToken({ id: newUser.id, username: newUser.username });
 
     return res.status(201).json({
       message: 'Email verified and registration complete!',
-      token,
+      token: accessToken,
+      accessToken,
+      refreshToken,
       user: { id: newUser.id, username: newUser.username, email: newUser.email }
     });
   } catch (error) {
@@ -195,7 +248,7 @@ router.post('/forgot-password-send-otp', async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
     // Cache OTP in Redis (expires in 5 minutes)
-    const redisKey = `cwh:reset-otp:${normalizedEmail}`;
+    const redisKey = `wp:reset-otp:${normalizedEmail}`;
     await redis.setex(redisKey, 300, otp);
 
     // Send email with OTP
@@ -223,7 +276,7 @@ router.post('/reset-password-verify-otp', async (req, res) => {
   }
 
   try {
-    const redisKey = `cwh:reset-otp:${normalizedEmail}`;
+    const redisKey = `wp:reset-otp:${normalizedEmail}`;
     const savedOtp = await redis.get(redisKey);
 
     if (!savedOtp) {
@@ -274,17 +327,22 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid username or password.' });
     }
 
-    // Generate JWT
-    const token = jwt.sign(
-      { id: user.id, username: user.username },
-      JWT_SECRET,
-      { expiresIn: '7d' } // Token lasts 7 days
-    );
+    // Generate Access Token (15m) & Refresh Token (7d)
+    const accessToken = generateAccessToken({ id: user.id, username: user.username });
+    const refreshToken = await generateRefreshToken({ id: user.id, username: user.username });
 
     return res.json({
       message: 'Login successful!',
-      token,
-      user: { id: user.id, username: user.username }
+      token: accessToken,
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        display_name: user.display_name,
+        avatar_url: user.avatar_url
+      }
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -292,9 +350,114 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// 3. Profile Fetching (verify token and return user details)
-router.get('/me', authenticateToken, (req: AuthRequest, res: Response) => {
-  return res.json({ user: req.user });
+// 3. Profile Fetching (verify token and return full user details)
+router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Unauthorized.' });
+  }
+  try {
+    const result = await query(
+      'SELECT id, username, email, display_name, avatar_url, created_at FROM users WHERE id = $1',
+      [req.user.id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+    return res.json({ user: result.rows[0] });
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    return res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+// 4. Update Profile (Display Name)
+router.put('/profile', authenticateToken, async (req: AuthRequest, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Unauthorized.' });
+  }
+  const { displayName } = req.body;
+  const cleanDisplayName = displayName ? displayName.trim() : null;
+
+  try {
+    const result = await query(
+      'UPDATE users SET display_name = $1 WHERE id = $2 RETURNING id, username, email, display_name, avatar_url',
+      [cleanDisplayName, req.user.id]
+    );
+    return res.json({
+      message: 'Profile updated successfully!',
+      user: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    return res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+// 5. Upload Avatar Image
+router.post('/avatar', authenticateToken, avatarUpload.single('avatar'), async (req: AuthRequest, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Unauthorized.' });
+  }
+  if (!req.file) {
+    return res.status(400).json({ error: 'Please select an image file to upload.' });
+  }
+
+  const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+
+  try {
+    await query('UPDATE users SET avatar_url = $1 WHERE id = $2', [avatarUrl, req.user.id]);
+    return res.json({
+      message: 'Avatar uploaded successfully!',
+      avatarUrl
+    });
+  } catch (error) {
+    console.error('Error saving avatar URL:', error);
+    return res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+// 6. Refresh Access Token using Refresh Token
+router.post('/refresh', async (req, res) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) {
+    return res.status(401).json({ error: 'Refresh token is required.' });
+  }
+
+  try {
+    const decoded = jwt.verify(refreshToken, REFRESH_SECRET) as { id: number; username: string; displayName?: string };
+
+    // Verify refresh token in Redis with graceful error catch
+    try {
+      const storedToken = await redis.get(`wp:refreshtoken:${decoded.id}`);
+      if (storedToken && storedToken !== refreshToken) {
+        return res.status(403).json({ error: 'Invalid or revoked refresh token. Please log in again.' });
+      }
+    } catch (redisErr) {
+      console.warn('Redis check bypassed during refresh:', redisErr);
+    }
+
+    // Generate new 5-minute Access Token
+    const newAccessToken = generateAccessToken({ id: decoded.id, username: decoded.username, displayName: decoded.displayName });
+
+    return res.json({
+      accessToken: newAccessToken,
+      token: newAccessToken
+    });
+  } catch (error) {
+    return res.status(403).json({ error: 'Expired or invalid refresh token.' });
+  }
+});
+
+// 7. Logout Endpoint (Revokes Refresh Token in Redis)
+router.post('/logout', authenticateToken, async (req: AuthRequest, res: Response) => {
+  if (req.user) {
+    try {
+      await redis.del(`wp:refreshtoken:${req.user.id}`);
+    } catch (err) {
+      console.error('Error revoking refresh token:', err);
+    }
+  }
+  return res.json({ message: 'Logged out successfully.' });
 });
 
 export default router;

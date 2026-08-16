@@ -29,9 +29,9 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: cwh
-      POSTGRES_USER: cwh_user
-      POSTGRES_PASSWORD: cwh_password
+      POSTGRES_DB: wp
+      POSTGRES_USER: wp_user
+      POSTGRES_PASSWORD: wp_password
     volumes:
       - postgres-data:/var/lib/postgresql/data
 

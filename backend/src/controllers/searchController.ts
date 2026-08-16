@@ -82,6 +82,7 @@ export const searchYouTube = async (req: Request, res: Response) => {
 
   const results = mockVideos.map(video => ({
     ...video,
+    thumbnail: `https://img.youtube.com/vi/${video.id}/mqdefault.jpg`,
     title: `${query.toUpperCase()} - ${video.title}`
   }));
 
