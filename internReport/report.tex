@@ -1,4 +1,5 @@
-\documentclass[12pt,a4paper]{article}
+% !TEX program = xelatex
+\documentclass[12pt,a4paper]{extarticle}
 \usepackage{fontspec}
 \usepackage[vietnamese]{babel}
 \setmainfont{Times New Roman}
@@ -48,7 +49,7 @@
         \textbf{\large KHOA TOÁN - CƠ - TIN HỌC}
         
         \vspace{1cm}
-        \includegraphics[height=3.5cm]{logo_hus.png}
+        \includegraphics[height=5.5cm]{logo_hus.png}
         \vspace{1cm}
         
         \textbf{\Large BÁO CÁO KẾT THÚC THỰC TẬP}\\[0.8cm]
@@ -63,9 +64,7 @@
                 \textbf{Lớp:} K68A2 Toán Tin \\
                 \textbf{Ngành:} Toán Tin \\
                 \textbf{Khoa:} Toán - Cơ - Tin học \\
-                \textbf{Trường:} Đại học Khoa học Tự nhiên (VNU - HUS) \\
-                \textbf{Ngày sinh:} 22/07/2005 \\
-                \textbf{Email:} namxivin@gmail.com
+                \textbf{Trường:} Đại học Khoa học Tự nhiên (VNU - HUS) 
             \end{flushleft}
         \end{minipage}
         
@@ -114,6 +113,7 @@ Em xin chân thành cảm ơn!
 \textbf{WebSocket} & WebSocket Protocol & Giao thức truyền thông 2 chiều qua TCP \\ \hline
 \textbf{RDBMS} & Relational Database Management System & Hệ quản trị cơ sở dữ liệu quan hệ \\ \hline
 \end{longtable}
+\setcounter{table}{0}
 
 % ==================== DANH MỤC BẢNG BIỂU ====================
 \newpage
@@ -148,22 +148,31 @@ Nhiệm vụ trọng tâm là nghiên cứu và xây dựng ứng dụng Web th�
 
 \subsection{Khảo sát công nghệ, công cụ và lý do lựa chọn}
 
-\subsubsection{Truyền thông thời gian thực: HTTP Polling vs WebSocket}
+\subsubsection{Giới thiệu công nghệ WebSocket}
+WebSocket là một giao thức truyền thông mạng hoạt động trên nền TCP, được chuẩn hóa bởi IETF trong RFC 6455, cho phép thiết lập một kênh truyền thông \textbf{song công toàn phần (full-duplex)} giữa Client và Server trên một kết nối duy nhất. Khác với mô hình HTTP truyền thống vốn chỉ cho phép Client chủ động gửi yêu cầu và Server phản hồi (request-response), WebSocket duy trì kết nối mở liên tục, cho phép cả hai phía chủ động gửi dữ liệu tới nhau bất kỳ lúc nào mà không cần thiết lập lại kết nối.
+
+Quá trình thiết lập kết nối WebSocket bắt đầu bằng một \textit{HTTP Handshake} (yêu cầu nâng cấp giao thức thông qua header \texttt{Upgrade: websocket}), sau đó kết nối được chuyển đổi hoàn toàn sang giao thức WebSocket. Từ thời điểm này, dữ liệu được truyền qua các \textit{frame} nhị phân có kích thước tiêu đề rất nhỏ (chỉ $2B-10B$), giúp giảm đáng kể độ trễ và chi phí băng thông so với việc gửi lặp lại các HTTP Header đầy đủ trong mỗi request.
+
+Trong đề tài này, thư viện \textbf{Socket.IO} được lựa chọn làm lớp trừu tượng hóa trên nền WebSocket, do cung cấp sẵn các tính năng thiết yếu cho ứng dụng thời gian thực:
 \begin{itemize}[leftmargin=1.2cm]
-    \item \textbf{HTTP Polling:} Client gửi request liên tục để kiểm tra dữ liệu. \textit{Nhược điểm:} Tạo ra lượng dữ liệu dư thừa lớn (HTTP Header overhead $500B-2KB$/request), gây quá tải CPU/RAM máy chủ và độ trễ cao ($1s-5s$).
-    \item \textbf{WebSocket (Socket.IO):} Duy trì kênh truyền thông song công toàn phần (Full-duplex) trên 1 kết nối TCP duy nhất. \textit{Ưu điểm:} Overhead cực nhỏ ($2B-10B$), độ trễ siêu thấp ($<100ms$), Server chủ động push dữ liệu. Thư viện Socket.IO hỗ trợ tự động kết nối lại và quản lý Room thông minh.
+    \item \textbf{Cơ chế Room:} Cho phép nhóm các kết nối (socket) theo từng phòng xem, giúp việc phát sự kiện (broadcast) chỉ giới hạn đúng phạm vi người dùng liên quan.
+    \item \textbf{Tự động kết nối lại (Auto-reconnect):} Khi mạng gián đoạn tạm thời, client tự động thiết lập lại kết nối mà không cần người dùng thao tác thủ công.
+    \item \textbf{Cơ chế dự phòng (Fallback):} Tự động chuyển sang HTTP long-polling trong trường hợp trình duyệt hoặc mạng không hỗ trợ WebSocket, đảm bảo tính tương thích rộng rãi.
 \end{itemize}
 
-\subsubsection{Xác thực và Bảo mật: Session-Cookie vs JWT + Bcrypt}
-\begin{itemize}[leftmargin=1.2cm]
-    \item \textbf{Session-Cookie:} Stateful, phụ thuộc bộ nhớ phiên Server, khó mở rộng và khó truyền xác thực khi kết nối WebSocket từ domain khác.
-    \item \textbf{JWT (JSON Web Token) + Bcrypt:} Stateless, chữ ký số HMAC-SHA256 bảo mật. Token được đính kèm dễ dàng trong REST Header và WebSocket Handshake (`socket.handshake.auth.token`). Bcrypt băm mật khẩu chống tấn công vét cạn.
-\end{itemize}
+Nhờ các đặc tính trên, WebSocket là nền tảng phù hợp để xây dựng module đồng bộ hóa trạng thái phát video thời gian thực với độ trễ siêu thấp ($<300ms$), đáp ứng đúng mục tiêu đề tài đặt ra.
+
+\subsubsection{Giới thiệu công nghệ xác thực: JWT và Bcrypt}
+Hệ thống xác thực người dùng được xây dựng dựa trên hai công nghệ chính: \textbf{JWT (JSON Web Token)} cho việc cấp phát và xác minh danh tính, và \textbf{Bcrypt} cho việc băm mật khẩu.
+
+JWT là một chuẩn mở (RFC 7519) cho phép tạo ra chuỗi mã thông báo mang thông tin xác thực đã được ký số bằng thuật toán HMAC-SHA256. Do bản chất \textit{stateless} (không lưu trạng thái phiên tại Server), JWT rất phù hợp với kiến trúc ứng dụng thời gian thực: token được đính kèm dễ dàng trong REST Header (\texttt{Authorization: Bearer <token>}) lẫn trong WebSocket Handshake (\texttt{socket.handshake.auth.token}), giúp thống nhất cơ chế xác thực giữa hai luồng giao tiếp REST API và WebSocket.
+
+Bcrypt là thuật toán băm mật khẩu một chiều có tích hợp \textit{salt} ngẫu nhiên và hệ số chi phí tính toán (\textit{cost factor}) có thể điều chỉnh, giúp tăng thời gian cần thiết cho các cuộc tấn công vét cạn (brute-force) hoặc tấn công bảng cầu vồng (rainbow table), qua đó bảo vệ mật khẩu người dùng ngay cả khi cơ sở dữ liệu bị rò rỉ.
 
 \subsubsection{Backend \& Cơ sở dữ liệu: Node.js, PostgreSQL và Redis}
 \begin{itemize}[leftmargin=1.2cm]
     \item \textbf{Node.js \& TypeScript:} Event Loop bất đồng bộ (Non-blocking I/O) xử lý hàng ngàn kết nối WebSocket đồng thời với bộ nhớ RAM thấp.
-    \item \textbf{PostgreSQL \& Redis (ioredis):} PostgreSQL lưu trữ bền vững thông tin tài khoản, phòng xem và lịch sử tin nhắn. Redis lưu trữ In-memory siêu tốc ($<1ms$) cho trạng thái phát thời gian thực (`isPlaying`, `progress`, `lastUpdated`).
+    \item \textbf{PostgreSQL \& Redis (ioredis):} PostgreSQL lưu trữ bền vững thông tin tài khoản, phòng xem và lịch sử tin nhắn. Redis lưu trữ In-memory siêu tốc ($<1ms$) cho trạng thái phát thời gian thực (\texttt{isPlaying}, \texttt{progress}, \texttt{lastUpdated}).
 \end{itemize}
 
 \newpage
@@ -177,9 +186,10 @@ Nhiệm vụ trọng tâm là nghiên cứu và xây dựng ứng dụng Web th�
 Hệ thống sử dụng 5 bảng dữ liệu quan hệ được chuẩn hóa:
 \begin{table}[h!]
 \centering
+\small
 \caption{Cấu trúc các bảng cơ sở dữ liệu PostgreSQL của hệ thống}
 \label{tab:db_schema_detail}
-\begin{tabular}{|p{3.5cm}|p{4.5cm}|p{6.5cm}|}
+\begin{tabular}{|l|p{4.5cm}|p{6.8cm}|}
 \hline
 \textbf{Tên bảng} & \textbf{Trường thông tin} & \textbf{Mô tả \& Khóa} \\ \hline
 \texttt{users} & \texttt{id, username, password, email, display\_name, avatar\_url} & PK: \texttt{id}, UNIQUE: \texttt{username, email}. Lưu tài khoản người dùng. \\ \hline
@@ -190,24 +200,137 @@ Hệ thống sử dụng 5 bảng dữ liệu quan hệ được chuẩn hóa:
 \end{tabular}
 \end{table}
 
+\begin{figure}[h!]
+\centering
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[
+    node distance=1.2cm and 1.8cm,
+    entity/.style={rectangle, draw=blue!70!black, fill=blue!5, rounded corners=4pt, minimum width=4.8cm, font=\small\sffamily, align=left, inner sep=6pt, line width=1pt},
+    rel/.style={->, >=stealth, line width=1.2pt, blue!70!black}
+]
+    % Central Entity: users
+    \node[entity] (users) {
+        \textbf{\large users}\\[3pt]
+        \rule{4.4cm}{0.5pt}\\[3pt]
+        \textbf{\color{red!70!black}PK} \texttt{id} : \textit{SERIAL}\\
+        \texttt{username} : \textit{VARCHAR}\\
+        \texttt{password} : \textit{VARCHAR}\\
+        \texttt{email} : \textit{VARCHAR}\\
+        \texttt{display\_name} : \textit{VARCHAR}\\
+        \texttt{avatar\_url} : \textit{TEXT}
+    };
+
+    % Top Left: user_rooms
+    \node[entity, above left=0.6cm and 1.5cm of users] (rooms) {
+        \textbf{\large user\_rooms}\\[3pt]
+        \rule{4.4cm}{0.5pt}\\[3pt]
+        \textbf{\color{red!70!black}PK} \texttt{id} : \textit{SERIAL}\\
+        \texttt{room\_id} : \textit{VARCHAR}\\
+        \texttt{name} : \textit{VARCHAR}\\
+        \texttt{description} : \textit{TEXT}\\
+        \textbf{\color{blue!70!black}FK} \texttt{user\_id} : \textit{INTEGER}\\
+        \texttt{created\_at} : \textit{TIMESTAMP}
+    };
+
+    % Bottom Left: discussion_messages
+    \node[entity, below left=0.6cm and 1.5cm of users] (messages) {
+        \textbf{\large discussion\_messages}\\[3pt]
+        \rule{4.4cm}{0.5pt}\\[3pt]
+        \textbf{\color{red!70!black}PK} \texttt{id} : \textit{SERIAL}\\
+        \texttt{room\_id} : \textit{VARCHAR}\\
+        \textbf{\color{blue!70!black}FK} \texttt{user\_id} : \textit{INTEGER}\\
+        \texttt{username} : \textit{VARCHAR}\\
+        \texttt{message} : \textit{TEXT}\\
+        \texttt{video\_timestamp} : \textit{INTEGER}
+    };
+
+    % Top Right: user_playlists
+    \node[entity, above right=0.6cm and 1.5cm of users] (playlists) {
+        \textbf{\large user\_playlists}\\[3pt]
+        \rule{4.4cm}{0.5pt}\\[3pt]
+        \textbf{\color{red!70!black}PK} \texttt{id} : \textit{SERIAL}\\
+        \textbf{\color{blue!70!black}FK} \texttt{user\_id} : \textit{INTEGER}\\
+        \texttt{title} : \textit{VARCHAR}\\
+        \texttt{description} : \textit{TEXT}\\
+        \texttt{created\_at} : \textit{TIMESTAMP}
+    };
+
+    % Bottom Right: user_playlist_items
+    \node[entity, below right=0.6cm and 1.5cm of playlists] (items) {
+        \textbf{\large user\_playlist\_items}\\[3pt]
+        \rule{4.4cm}{0.5pt}\\[3pt]
+        \textbf{\color{red!70!black}PK} \texttt{id} : \textit{SERIAL}\\
+        \textbf{\color{blue!70!black}FK} \texttt{playlist\_id} : \textit{INTEGER}\\
+        \texttt{song\_id} : \textit{VARCHAR}\\
+        \texttt{title} : \textit{VARCHAR}\\
+        \texttt{thumbnail} : \textit{TEXT}\\
+        \texttt{duration} : \textit{VARCHAR}
+    };
+
+    % Relationships (Foreign Keys)
+    \draw[rel] (users) -- node[above, font=\scriptsize\bfseries] {1 : N} (rooms);
+    \draw[rel] (users) -- node[below, font=\scriptsize\bfseries] {1 : N} (messages);
+    \draw[rel] (users) -- node[above, font=\scriptsize\bfseries] {1 : N} (playlists);
+    \draw[rel] (playlists) -- node[right, font=\scriptsize\bfseries] {1 : N} (items);
+
+\end{tikzpicture}%
+}
+\caption{Sơ đồ thực thể liên kết (ERD) Cơ sở dữ liệu PostgreSQL}
+\label{fig:db_erd_schema}
+\end{figure}
+
 \subsubsection{Sơ đồ luồng dữ liệu}
 \begin{itemize}[leftmargin=1.2cm]
     \item \textbf{Luồng đăng nhập JWT:} Client gửi thông tin đăng nhập $\rightarrow$ Server xác thực Bcrypt hash $\rightarrow$ Tạo chuỗi JWT mã hóa trả về cho Client lưu vào LocalStorage.
     \item \textbf{Luồng đồng bộ trạng thái phát video (Sequence Flow):}
 \begin{figure}[h!]
 \centering
-\small
-\begin{verbatim}
-Client A           Socket.IO Server       Redis Cache         Client B
-   |                      |                    |                 |
-   |-- (Click Pause) ---->|                    |                 |
-   |   emit('set-playback'|                    |                 |
-   |                      |-- setPlayback ---->|                 |
-   |                      |   (Update Redis)   |                 |
-   |                      |                    |                 |
-   |                      |-- emit('playback-updated') --------->|
-   |                      |                    | (YT seek & pause)
-\end{verbatim}
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[
+    node distance=2.5cm and 2.2cm,
+    actor/.style={rectangle, draw=blue!70!black, fill=blue!8, rounded corners=4pt, font=\bfseries\small, minimum width=2.6cm, minimum height=0.9cm, align=center},
+    server/.style={rectangle, draw=purple!70!black, fill=purple!8, rounded corners=4pt, font=\bfseries\small, minimum width=2.8cm, minimum height=0.9cm, align=center},
+    redis/.style={rectangle, draw=red!70!black, fill=red!8, rounded corners=4pt, font=\bfseries\small, minimum width=2.6cm, minimum height=0.9cm, align=center},
+    lifeline/.style={dashed, gray!60, line width=1pt},
+    msg/.style={->, >=stealth, line width=1.1pt, blue!80!black, font=\small\sffamily},
+    reply/.style={<-, >=stealth, dashed, line width=1.1pt, red!70!black, font=\small\sffamily},
+    action/.style={draw=orange!80!black, fill=orange!10, rounded corners=3pt, font=\scriptsize\sffamily, align=center, inner sep=4pt}
+]
+    % Nodes (Participants)
+    \node[actor] (ca) {Client A\\(Nguồn phát)};
+    \node[server, right=of ca] (s) {Socket.IO Server\\(Node.js)};
+    \node[redis, right=of s] (r) {Redis Cache\\(In-memory)};
+    \node[actor, right=of r] (cb) {Client B\\(Thành viên)};
+
+    % Lifelines
+    \draw[lifeline] (ca) -- ++(0,-5.4);
+    \draw[lifeline] (s)  -- ++(0,-5.4);
+    \draw[lifeline] (r)  -- ++(0,-5.4);
+    \draw[lifeline] (cb) -- ++(0,-5.4);
+
+    % Sequence step 1: Action on Client A
+    \node[action, yshift=-0.8cm] at (ca) {Click Pause / Seek};
+
+    % Sequence step 2: Client A -> Server
+    \draw[msg] ([yshift=-1.3cm]ca.center) -- node[above, font=\small\bfseries] {1. set-playback} ([yshift=-1.3cm]s.center);
+    \fill[blue!80!black] ([yshift=-1.3cm]s.center) circle (2.5pt);
+
+    % Sequence step 3: Server -> Redis
+    \draw[msg, color=purple!80!black] ([yshift=-2.2cm]s.center) -- node[above, font=\small\bfseries] {2. setPlaybackState} ([yshift=-2.2cm]r.center);
+    \fill[purple!80!black] ([yshift=-2.2cm]r.center) circle (2.5pt);
+
+    % Sequence step 4: Redis -> Server response
+    \draw[reply] ([yshift=-3.1cm]s.center) -- node[above, font=\small\bfseries] {3. Trả về OK} ([yshift=-3.1cm]r.center);
+
+    % Sequence step 5: Server -> Client B broadcast
+    \draw[msg, color=green!60!black] ([yshift=-4.0cm]s.center) -- node[above, font=\small\bfseries] {4. playback-updated} ([yshift=-4.0cm]cb.center);
+    \fill[green!60!black] ([yshift=-4.0cm]cb.center) circle (2.5pt);
+
+    % Sequence step 6: Action on Client B
+    \node[action, yshift=-4.8cm] at (cb) {Đồng bộ Player\\(Seek / Pause)};
+    
+\end{tikzpicture}%
+}
 \caption{Sơ đồ luồng xử lý đồng bộ trạng thái phát video thời gian thực}
 \label{fig:sync_sequence_flow}
 \end{figure}
@@ -217,20 +340,19 @@ Client A           Socket.IO Server       Redis Cache         Client B
 
 \subsubsection{Module Xác thực và Quản lý phòng xem}
 \begin{itemize}[leftmargin=1.2cm]
-    \item \textbf{REST API Auth:} Xây dựng các route đăng ký, đăng nhập và middleware `authenticateToken` giải mã JWT Token trong Header `Authorization: Bearer <token>`.
-    \item \textbf{WebSocket Handshake Auth:} Khi thiết lập kết nối socket, Server lấy token từ `socket.handshake.auth.token` để xác thực danh tính người dùng và phân nhóm socket vào Room tương ứng qua lệnh `socket.join(roomId)`.
+    \item \textbf{REST API Auth:} Xây dựng các route đăng ký, đăng nhập và middleware \texttt{authenticateToken} giải mã JWT Token trong Header \texttt{Authorization: Bearer <token>}.
+    \item \textbf{WebSocket Handshake Auth:} Khi thiết lập kết nối socket, Server lấy token từ \texttt{socket.handshake.auth.token} để xác thực danh tính người dùng và phân nhóm socket vào Room tương ứng qua lệnh \texttt{socket.join(roomId)}.
 \end{itemize}
 
 \subsubsection{Module Đồng bộ Video và Thuật toán Bù sai lệch}
 \begin{itemize}[leftmargin=1.2cm]
-    \item \textbf{Khắc phục vòng lặp sự kiện (Event Loop Feedback Loop):} Khi Client nhận lệnh đồng bộ từ Server và gọi API trình phát (`seekTo`, `pauseVideo`), sự kiện `onStateChange` tự động bật làm gửi ngược sự kiện lên Server. Hệ thống sử dụng cờ `isSyncing = true` tại Client để tạm thời bỏ qua phát sự kiện trong $300ms$.
-    \item \textbf{Thuật toán bù sai lệch thời gian (Drift Compensation):} Khi người dùng mới tham gia phòng, Server tính thời gian video đã phát bằng công thức:
-    $$\text{progress} = \text{progress\_gốc} + \frac{\text{Thời gian hiện tại} - \text{lastUpdated}}{1000}$$
-    từ dữ liệu lưu trong Redis.
+    \item \textbf{Khắc phục vòng lặp sự kiện (Event Loop Feedback Loop):} Khi Client nhận lệnh đồng bộ từ Server và gọi API trình phát (\texttt{seekTo}, \texttt{pauseVideo}), sự kiện \texttt{onStateChange} tự động bật làm gửi ngược sự kiện lên Server. Hệ thống sử dụng cờ \texttt{isSyncing = true} tại Client để tạm thời bỏ qua phát sự kiện trong $300ms$.
+    \item \textbf{Thuật toán bù sai lệch thời gian (Drift Compensation):} Khi người dùng mới tham gia phòng, Server tính thời gian video đã phát (tính bằng giây) bằng công thức, trong đó \texttt{lastUpdated} là mốc thời gian (Unix timestamp, đơn vị mili-giây) được lưu trong Redis tại lần cập nhật gần nhất, và phép chia cho $1000$ dùng để quy đổi từ mili-giây sang giây:
+    $$\text{progress (s)} = \text{progress\_gốc (s)} + \frac{\text{Thời gian hiện tại (ms)} - \text{lastUpdated (ms)}}{1000}$$
 \end{itemize}
 
 \subsubsection{Module Trò chuyện nhóm thời gian thực}
-Server lắng nghe sự kiện `send-discussion-message`, trích xuất `videoTimestamp` hiện tại, lưu tin nhắn vào PostgreSQL và phát sự kiện `new-discussion-message` cho toàn bộ thành viên trong phòng.
+Server lắng nghe sự kiện \texttt{send-discussion-message}, trích xuất \texttt{videoTimestamp} hiện tại, lưu tin nhắn vào PostgreSQL và phát sự kiện \texttt{new-discussion-message} cho toàn bộ thành viên trong phòng.
 
 \newpage
 
@@ -267,13 +389,14 @@ Hệ thống đã hoàn thiện 100\% các chức năng với giao diện Web Si
 
 \subsubsection{Phân tích lỗi kỹ thuật và Cách khắc phục}
 \begin{enumerate}[leftmargin=1.2cm]
-    \item \textbf{Lỗi vòng lặp sự kiện vô hạn:} Gọi lệnh API trình phát kích hoạt lại sự kiện `onStateChange`. \textit{Khắc phục:} Sử dụng cờ cản `isSyncing` tạm khóa gửi tin nhắn lên Server trong $300ms$.
-    \item \textbf{Lỗi trôi thời gian phát (Time Drift):} Thời gian phát cố định khiến người vào sau bị lệch pha. \textit{Khắc phục:} Thuật toán Drift Compensation tự động tính thời gian trôi qua dựa trên `lastUpdated` lưu trong Redis.
-    \item \textbf{Lỗi rò rỉ tệp tin rác trên đĩa:} Video tự tải lên không bị xóa khi bỏ khỏi Queue. \textit{Khắc phục:} Xây dựng hàm `cleanupCustomVideoFile()` xóa tệp tin bằng `fs.unlinkSync()` ngay khi gỡ bài.
-    \item \textbf{Lỗi Token JWT hết hạn:} Ngắt kết nối kết nối WebSocket giữa chừng. \textit{Khắc phục:} Đăng ký handler `auth-error` hiển thị thông báo và chuyển hướng đăng nhập lại.
+    \item \textbf{Lỗi vòng lặp sự kiện vô hạn:} Gọi lệnh API trình phát kích hoạt lại sự kiện \texttt{onStateChange}. \textit{Khắc phục:} Sử dụng cờ cản \texttt{isSyncing} tạm khóa gửi tin nhắn lên Server trong $300ms$.
+    \item \textbf{Lỗi trôi thời gian phát (Time Drift):} Thời gian phát cố định khiến người vào sau bị lệch pha. \textit{Khắc phục:} Thuật toán Drift Compensation tự động tính thời gian trôi qua dựa trên \texttt{lastUpdated} lưu trong Redis.
+    \item \textbf{Lỗi rò rỉ tệp tin rác trên đĩa:} Video tự tải lên không bị xóa khi bỏ khỏi Queue. \textit{Khắc phục:} Xây dựng hàm \texttt{cleanupCustomVideoFile()} xóa tệp tin bằng \texttt{fs.unlinkSync()} ngay khi gỡ bài.
+    \item \textbf{Lỗi Token JWT hết hạn:} Ngắt kết nối WebSocket giữa chừng. \textit{Khắc phục:} Đăng ký handler \texttt{auth-error} hiển thị thông báo và chuyển hướng đăng nhập lại.
 \end{enumerate}
 
 \subsubsection{Đánh giá độ trễ đồng bộ (Latency Benchmark)}
+Độ trễ đồng bộ được đo bằng cách ghi nhận khoảng thời gian từ lúc Client A phát sự kiện điều khiển (\texttt{set-playback}) tới lúc Client B nhận được sự kiện \texttt{playback-updated} tương ứng, sử dụng đồng hồ \texttt{performance.now()} tại cả hai đầu và đồng bộ lệch giờ hệ thống trước khi đo. Mỗi kịch bản mạng được đo lặp lại $50$ lần liên tiếp để lấy giá trị tối thiểu, trung bình và tối đa:
 \begin{table}[h!]
 \centering
 \caption{Đánh giá độ trễ đồng bộ video thời gian thực trong các kịch bản mạng}
@@ -301,6 +424,8 @@ Mạng di động 4G / Ngrok Tunnel & $120ms$ & $210ms$ & $380ms$ \\ \hline
 \addcontentsline{toc}{section}{KẾT LUẬN}
 
 Báo cáo đã hoàn thành đầy đủ các yêu cầu chuyên môn. Sản phẩm giải quyết bài toán đồng bộ phiên xem video nhóm qua mạng với độ trễ thấp, đem lại trải nghiệm tương tác mượt mà. Thông qua đợt thực tập, sinh viên đã củng cố kiến thức đào tạo tại Khoa Toán - Cơ - Tin học và làm chủ công nghệ lập trình Web thời gian thực.
+
+Trong thời gian tới, đề tài có thể được mở rộng theo một số hướng: bổ sung cơ chế phân quyền chủ phòng (host) để kiểm soát quyền điều khiển video; áp dụng Redis Adapter cho Socket.IO nhằm mở rộng hệ thống theo chiều ngang (horizontal scaling) khi số lượng người dùng tăng cao; tích hợp thêm các nguồn video ngoài YouTube; và bổ sung các tính năng tương tác như biểu tượng cảm xúc thời gian thực, chia sẻ màn hình giữa các thành viên trong phòng. Đây sẽ là nền tảng để phát triển sản phẩm thành một ứng dụng hoàn chỉnh, sẵn sàng triển khai ở quy mô lớn hơn.
 
 \newpage
 

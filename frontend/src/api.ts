@@ -38,23 +38,21 @@ export function scheduleTokenRefresh() {
 }
 
 // -------------------------------------------------------------
-// Dual-Token Auto Refresh & Interceptor
+// Dual-Token Auto Refresh & Interceptor (Cookie-based Refresh Token)
 // -------------------------------------------------------------
 export async function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = localStorage.getItem('refreshToken');
-  if (!refreshToken) return null;
-
   try {
     const res = await fetch('/api/auth/refresh', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken })
+      credentials: 'include'
     });
 
     if (res.ok) {
       const data = await res.json();
       const newAccessToken = data.accessToken || data.token;
       localStorage.setItem('token', newAccessToken);
+      localStorage.removeItem('refreshToken'); // Cleanup legacy token if present
       scheduleTokenRefresh();
       return newAccessToken;
     } else {
@@ -71,6 +69,7 @@ export async function refreshAccessToken(): Promise<string | null> {
 }
 
 export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
+  options.credentials = 'include';
   let token = localStorage.getItem('token');
   
   const headers = new Headers(options.headers || {});
@@ -99,7 +98,13 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
 // Auth API Calls
 // -------------------------------------------------------------
 export async function fetchUserProfile(): Promise<User | null> {
-  const storedToken = localStorage.getItem('token');
+  let storedToken = localStorage.getItem('token');
+  
+  // If no access token in localStorage, attempt to restore session via Remember Me cookie
+  if (!storedToken) {
+    storedToken = await refreshAccessToken();
+  }
+
   if (!storedToken) {
     setCurrentUser(null);
     return null;
@@ -266,5 +271,84 @@ export async function getUserPlaylists(): Promise<UserPlaylist[]> {
   } catch (err) {
     console.error('Failed to fetch playlists:', err);
     return [];
+  }
+}
+
+export async function createPlaylistAPI(title: string, description: string): Promise<{ success: boolean; playlist?: UserPlaylist; error?: string }> {
+  try {
+    const res = await fetchWithAuth('/api/playlists', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, description })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      return { success: true, playlist: data.playlist };
+    }
+    return { success: false, error: data.error };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Failed to create playlist.' };
+  }
+}
+
+export async function getPlaylistDetailsAPI(id: number): Promise<{ success: boolean; playlist?: UserPlaylist; items?: any[]; error?: string }> {
+  try {
+    const res = await fetchWithAuth(`/api/playlists/${id}`);
+    const data = await res.json();
+    if (res.ok) {
+      return { success: true, playlist: data.playlist, items: data.items || [] };
+    }
+    return { success: false, error: data.error };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Failed to fetch playlist details.' };
+  }
+}
+
+export async function deletePlaylistAPI(id: number): Promise<{ success: boolean; error?: string }> {
+  try {
+    const res = await fetchWithAuth(`/api/playlists/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (res.ok) {
+      return { success: true };
+    }
+    return { success: false, error: data.error };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Failed to delete playlist.' };
+  }
+}
+
+export async function addSongToPlaylistAPI(playlistId: number, song: { id: string; title: string; thumbnail?: string; channelTitle?: string; duration?: number }): Promise<{ success: boolean; item?: any; error?: string }> {
+  try {
+    const res = await fetchWithAuth(`/api/playlists/${playlistId}/items`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: song.id,
+        title: song.title,
+        thumbnail: song.thumbnail || '',
+        channelTitle: song.channelTitle || '',
+        duration: song.duration || 0
+      })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      return { success: true, item: data.item };
+    }
+    return { success: false, error: data.error };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Failed to add song to playlist.' };
+  }
+}
+
+export async function removeSongFromPlaylistAPI(playlistId: number, itemId: number): Promise<{ success: boolean; error?: string }> {
+  try {
+    const res = await fetchWithAuth(`/api/playlists/${playlistId}/items/${itemId}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (res.ok) {
+      return { success: true };
+    }
+    return { success: false, error: data.error };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Failed to remove song from playlist.' };
   }
 }

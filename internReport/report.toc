@@ -6,24 +6,24 @@
 \contentsline {section}{\numberline {1}PHẦN 1: GIỚI THIỆU}{6}{section.1}%
 \contentsline {subsection}{\numberline {1.1}Phát biểu bài toán và công việc được giao}{6}{subsection.1.1}%
 \contentsline {subsection}{\numberline {1.2}Khảo sát công nghệ, công cụ và lý do lựa chọn}{6}{subsection.1.2}%
-\contentsline {subsubsection}{\numberline {1.2.1}Truyền thông thời gian thực: HTTP Polling vs WebSocket}{6}{subsubsection.1.2.1}%
-\contentsline {subsubsection}{\numberline {1.2.2}Xác thực và Bảo mật: Session-Cookie vs JWT + Bcrypt}{6}{subsubsection.1.2.2}%
+\contentsline {subsubsection}{\numberline {1.2.1}Giới thiệu công nghệ WebSocket}{6}{subsubsection.1.2.1}%
+\contentsline {subsubsection}{\numberline {1.2.2}Giới thiệu công nghệ xác thực: JWT và Bcrypt}{7}{subsubsection.1.2.2}%
 \contentsline {subsubsection}{\numberline {1.2.3}Backend \& Cơ sở dữ liệu: Node.js, PostgreSQL và Redis}{7}{subsubsection.1.2.3}%
 \contentsline {section}{\numberline {2}PHẦN 2: CÔNG VIỆC TRIỂN KHAI}{8}{section.2}%
 \contentsline {subsection}{\numberline {2.1}Phân tích yêu cầu và Thiết kế kiến trúc hệ thống}{8}{subsection.2.1}%
 \contentsline {subsubsection}{\numberline {2.1.1}Thiết kế Cơ sở dữ liệu PostgreSQL}{8}{subsubsection.2.1.1}%
-\contentsline {subsubsection}{\numberline {2.1.2}Sơ đồ luồng dữ liệu}{8}{subsubsection.2.1.2}%
+\contentsline {subsubsection}{\numberline {2.1.2}Sơ đồ luồng dữ liệu}{9}{subsubsection.2.1.2}%
 \contentsline {subsection}{\numberline {2.2}Triển khai các Module chức năng}{9}{subsection.2.2}%
 \contentsline {subsubsection}{\numberline {2.2.1}Module Xác thực và Quản lý phòng xem}{9}{subsubsection.2.2.1}%
 \contentsline {subsubsection}{\numberline {2.2.2}Module Đồng bộ Video và Thuật toán Bù sai lệch}{9}{subsubsection.2.2.2}%
-\contentsline {subsubsection}{\numberline {2.2.3}Module Trò chuyện nhóm thời gian thực}{9}{subsubsection.2.2.3}%
-\contentsline {section}{\numberline {3}PHẦN 3: CÁC KẾT QUẢ ĐẠT ĐƯỢC}{10}{section.3}%
-\contentsline {subsection}{\numberline {3.1}Giới thiệu sản phẩm phần mềm và Giao diện}{10}{subsection.3.1}%
-\contentsline {subsection}{\numberline {3.2}Kết quả kiểm thử và Phân tích lỗi kỹ thuật}{10}{subsection.3.2}%
-\contentsline {subsubsection}{\numberline {3.2.1}Kết quả các Test Cases kiểm thử chức năng}{10}{subsubsection.3.2.1}%
-\contentsline {subsubsection}{\numberline {3.2.2}Phân tích lỗi kỹ thuật và Cách khắc phục}{10}{subsubsection.3.2.2}%
-\contentsline {subsubsection}{\numberline {3.2.3}Đánh giá độ trễ đồng bộ (Latency Benchmark)}{11}{subsubsection.3.2.3}%
-\contentsline {subsection}{\numberline {3.3}Đánh giá ưu nhược điểm \& Bài học kinh nghiệm}{11}{subsection.3.3}%
-\contentsline {section}{KẾT LUẬN}{12}{section*.10}%
-\contentsline {section}{TÀI LIỆU THAM KHẢO}{13}{section*.11}%
-\contentsline {section}{PHỤ LỤC}{14}{section*.12}%
+\contentsline {subsubsection}{\numberline {2.2.3}Module Trò chuyện nhóm thời gian thực}{10}{subsubsection.2.2.3}%
+\contentsline {section}{\numberline {3}PHẦN 3: CÁC KẾT QUẢ ĐẠT ĐƯỢC}{11}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Giới thiệu sản phẩm phần mềm và Giao diện}{11}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Kết quả kiểm thử và Phân tích lỗi kỹ thuật}{11}{subsection.3.2}%
+\contentsline {subsubsection}{\numberline {3.2.1}Kết quả các Test Cases kiểm thử chức năng}{11}{subsubsection.3.2.1}%
+\contentsline {subsubsection}{\numberline {3.2.2}Phân tích lỗi kỹ thuật và Cách khắc phục}{11}{subsubsection.3.2.2}%
+\contentsline {subsubsection}{\numberline {3.2.3}Đánh giá độ trễ đồng bộ (Latency Benchmark)}{12}{subsubsection.3.2.3}%
+\contentsline {subsection}{\numberline {3.3}Đánh giá ưu nhược điểm \& Bài học kinh nghiệm}{12}{subsection.3.3}%
+\contentsline {section}{KẾT LUẬN}{13}{section*.11}%
+\contentsline {section}{TÀI LIỆU THAM KHẢO}{14}{section*.12}%
+\contentsline {section}{PHỤ LỤC}{15}{section*.13}%

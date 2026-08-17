@@ -210,15 +210,13 @@ router.post('/register-verify-otp', async (req, res) => {
     // Dispatch welcome email
     await sendWelcomeEmail(payload.email, payload.username);
 
-    // Generate Access Token (15m) & Refresh Token (7d)
+    // Generate Access Token
     const accessToken = generateAccessToken({ id: newUser.id, username: newUser.username });
-    const refreshToken = await generateRefreshToken({ id: newUser.id, username: newUser.username });
 
     return res.status(201).json({
       message: 'Email verified and registration complete!',
       token: accessToken,
       accessToken,
-      refreshToken,
       user: { id: newUser.id, username: newUser.username, email: newUser.email }
     });
   } catch (error) {
@@ -306,7 +304,7 @@ router.post('/reset-password-verify-otp', async (req, res) => {
 
 // 2. Login endpoint
 router.post('/login', async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, rememberMe } = req.body;
 
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password are required.' });
@@ -327,15 +325,27 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid username or password.' });
     }
 
-    // Generate Access Token (15m) & Refresh Token (7d)
+    // Always generate Access Token
     const accessToken = generateAccessToken({ id: user.id, username: user.username });
-    const refreshToken = await generateRefreshToken({ id: user.id, username: user.username });
+
+    // Handle Refresh Token based on Remember Me
+    if (rememberMe) {
+      const refreshToken = await generateRefreshToken({ id: user.id, username: user.username });
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        path: '/'
+      });
+    } else {
+      res.clearCookie('refreshToken', { path: '/' });
+    }
 
     return res.json({
       message: 'Login successful!',
       token: accessToken,
       accessToken,
-      refreshToken,
       user: {
         id: user.id,
         username: user.username,
@@ -416,9 +426,9 @@ router.post('/avatar', authenticateToken, avatarUpload.single('avatar'), async (
   }
 });
 
-// 6. Refresh Access Token using Refresh Token
+// 6. Refresh Access Token using Refresh Token from Cookie
 router.post('/refresh', async (req, res) => {
-  const { refreshToken } = req.body;
+  const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
   if (!refreshToken) {
     return res.status(401).json({ error: 'Refresh token is required.' });
   }
@@ -430,6 +440,7 @@ router.post('/refresh', async (req, res) => {
     try {
       const storedToken = await redis.get(`wp:refreshtoken:${decoded.id}`);
       if (storedToken && storedToken !== refreshToken) {
+        res.clearCookie('refreshToken', { path: '/' });
         return res.status(403).json({ error: 'Invalid or revoked refresh token. Please log in again.' });
       }
     } catch (redisErr) {
@@ -444,11 +455,12 @@ router.post('/refresh', async (req, res) => {
       token: newAccessToken
     });
   } catch (error) {
+    res.clearCookie('refreshToken', { path: '/' });
     return res.status(403).json({ error: 'Expired or invalid refresh token.' });
   }
 });
 
-// 7. Logout Endpoint (Revokes Refresh Token in Redis)
+// 7. Logout Endpoint (Revokes Refresh Token in Redis and clears cookie)
 router.post('/logout', authenticateToken, async (req: AuthRequest, res: Response) => {
   if (req.user) {
     try {
@@ -457,6 +469,7 @@ router.post('/logout', authenticateToken, async (req: AuthRequest, res: Response
       console.error('Error revoking refresh token:', err);
     }
   }
+  res.clearCookie('refreshToken', { path: '/' });
   return res.json({ message: 'Logged out successfully.' });
 });
 

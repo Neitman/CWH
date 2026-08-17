@@ -5,6 +5,7 @@ process.env.TZ = 'Asia/Ho_Chi_Minh';
 
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
@@ -44,8 +45,9 @@ const allowedOrigins = (origin: string | undefined, callback: (err: Error | null
 };
 
 const app = express();
-app.use(cors({ origin: allowedOrigins }));
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json());
+app.use(cookieParser());
 
 // Register API Routes
 app.use('/api/auth', authRoutes);

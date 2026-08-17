@@ -2,11 +2,10 @@ import { currentUser, fetchUserProfile, logoutUser } from '../api';
 import { switchPage } from '../router';
 
 export function initHomeView(showToast: (msg: string, type: 'info' | 'error' | 'success') => void) {
-  const authModal = document.getElementById('auth-modal')!;
-  const openAuthBtn = document.getElementById('open-auth-btn')!;
+  const authModal = document.getElementById('auth-modal');
   const mainLoginBtn = document.getElementById('main-login-btn');
   const logoutBtn = document.getElementById('logout-btn');
-  const closeAuthModalBtn = document.getElementById('close-auth-modal-btn')!;
+  const closeAuthModalBtn = document.getElementById('close-auth-modal-btn');
   const tabLogin = document.getElementById('tab-login')!;
   const tabRegister = document.getElementById('tab-register')!;
   const loginForm = document.getElementById('login-form') as HTMLFormElement;
@@ -16,6 +15,7 @@ export function initHomeView(showToast: (msg: string, type: 'info' | 'error' | '
   
   const loginUsernameInput = document.getElementById('login-username') as HTMLInputElement;
   const loginPasswordInput = document.getElementById('login-password') as HTMLInputElement;
+  const loginRememberMeInput = document.getElementById('login-remember-me') as HTMLInputElement;
   const loginErrorMsg = document.getElementById('login-error-msg')!;
 
   const registerUsernameInput = document.getElementById('register-username') as HTMLInputElement;
@@ -39,16 +39,20 @@ export function initHomeView(showToast: (msg: string, type: 'info' | 'error' | '
   let otpFlowEmail = '';
 
   const showAuthModal = () => {
-    authModal.classList.remove('hidden');
-    authModal.setAttribute('style', 'display: flex !important;');
-    loginErrorMsg.classList.add('hidden');
-    registerErrorMsg.classList.add('hidden');
+    if (authModal) {
+      authModal.classList.remove('hidden');
+      authModal.setAttribute('style', 'display: flex !important;');
+    }
+    loginErrorMsg?.classList.add('hidden');
+    registerErrorMsg?.classList.add('hidden');
     showOnlyForm('login');
   };
 
   const hideAuthModal = () => {
-    authModal.classList.add('hidden');
-    authModal.setAttribute('style', 'display: none !important;');
+    if (authModal) {
+      authModal.classList.add('hidden');
+      authModal.setAttribute('style', 'display: none !important;');
+    }
   };
 
   function showOnlyForm(formId: 'login' | 'register' | 'forgot' | 'otp') {
@@ -79,7 +83,6 @@ export function initHomeView(showToast: (msg: string, type: 'info' | 'error' | '
     }
   }
 
-  openAuthBtn?.addEventListener('click', showAuthModal);
   mainLoginBtn?.addEventListener('click', showAuthModal);
   closeAuthModalBtn?.addEventListener('click', hideAuthModal);
 
@@ -118,21 +121,21 @@ export function initHomeView(showToast: (msg: string, type: 'info' | 'error' | '
 
     const username = loginUsernameInput.value.trim();
     const password = loginPasswordInput.value;
+    const rememberMe = loginRememberMeInput ? loginRememberMeInput.checked : false;
 
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        credentials: 'include',
+        body: JSON.stringify({ username, password, rememberMe })
       });
 
       const data = await res.json();
 
       if (res.ok) {
         localStorage.setItem('token', data.accessToken || data.token);
-        if (data.refreshToken) {
-          localStorage.setItem('refreshToken', data.refreshToken);
-        }
+        localStorage.removeItem('refreshToken');
         await fetchUserProfile();
         hideAuthModal();
         updateAuthHeaderUI();
@@ -264,7 +267,7 @@ export function initHomeView(showToast: (msg: string, type: 'info' | 'error' | '
           return;
         }
 
-        const res = await fetch('/api/auth/forgot-password-verify-otp', {
+        const res = await fetch('/api/auth/reset-password-verify-otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: otpFlowEmail, otp, newPassword })

@@ -41,7 +41,6 @@
           </div>
           <div class="header-actions">
             <div id="auth-status-container" class="auth-status-container">
-              <button id="open-auth-btn" class="btn btn-primary">Login / Register</button>
               <div id="user-profile-section" class="user-profile-section hidden">
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                   <img id="header-avatar-img" class="header-avatar-img" src="https://ui-avatars.com/api/?name=User&background=6366f1&color=fff" alt="Avatar" />
@@ -59,16 +58,109 @@
         </header>
 
         <!-- ========================================================= -->
-        <!-- 1. MAIN PAGE (Landing & Auth Promo)                      -->
+        <!-- 1. MAIN PAGE (Landing Auth Split Container)               -->
         <!-- ========================================================= -->
-        <div id="main-page" class="page-view">
-          <div class="glass-card hero-card" style="text-align: center; padding: 3rem 1.5rem; border-radius: 16px;">
-            <h2 style="font-size: 2.2rem; font-weight: 800; color: #fff; margin-bottom: 0.75rem;">Watch Together in Real-Time</h2>
-            <p style="color: var(--color-text-muted); max-width: 600px; margin: 0 auto 1.75rem auto; font-size: 1rem; line-height: 1.6;">
-              Create persistent watch rooms, manage your profile, sync YouTube videos and custom video files live with friends.
-            </p>
-            <div style="display: flex; gap: 1rem; justify-content: center; align-items: center; flex-wrap: wrap;">
-              <button id="main-login-btn" class="btn btn-primary" style="padding: 0.75rem 2rem; font-size: 1rem; font-weight: 600;">Get Started / Login</button>
+        <div id="main-page" class="page-view" style="display: flex; justify-content: center; align-items: center; min-height: calc(100vh - 120px); padding: 1rem 0;">
+          <div class="glass-card auth-split-modal main-landing-card">
+            <!-- Left Column: Interactive Input Forms -->
+            <div class="auth-split-left">
+              <div class="auth-brand-header">
+                <h2 class="auth-brand-title">Watch Party</h2>
+                <p class="auth-brand-subtitle">Welcome back! Sign in or create an account to start syncing.</p>
+              </div>
+
+              <div class="modal-tabs">
+                <button id="tab-login" class="tab-btn active">Login</button>
+                <button id="tab-register" class="tab-btn">Register</button>
+              </div>
+
+              <!-- Login Form -->
+              <form id="login-form" class="auth-form">
+                <div class="form-group">
+                  <label for="login-username">Username</label>
+                  <input type="text" id="login-username" required placeholder="Enter username..." autocomplete="username" />
+                </div>
+                <div class="form-group">
+                  <label for="login-password">Password</label>
+                  <input type="password" id="login-password" required placeholder="Enter password..." autocomplete="current-password" />
+                </div>
+                <div class="login-options-row">
+                  <label class="remember-me-label" for="login-remember-me">
+                    <input type="checkbox" id="login-remember-me" class="remember-me-checkbox" />
+                    <span>Remember me</span>
+                  </label>
+                  <a href="#" id="forgot-password-link" style="color: var(--color-text-muted); font-size: 0.8rem; text-decoration: underline;">Forgot password?</a>
+                </div>
+                <div id="login-error-msg" class="error-msg hidden"></div>
+                <button type="submit" id="login-submit-btn" class="btn btn-primary btn-block">Login</button>
+              </form>
+
+              <!-- Register Form -->
+              <form id="register-form" class="auth-form hidden">
+                <div class="form-group">
+                  <label for="register-username">Username</label>
+                  <input type="text" id="register-username" required placeholder="At least 3 characters..." autocomplete="username" />
+                </div>
+                <div class="form-group">
+                  <label for="register-email">Email</label>
+                  <input type="email" id="register-email" required placeholder="Enter email address..." autocomplete="email" />
+                </div>
+                <div class="form-group">
+                  <label for="register-password">Password</label>
+                  <input type="password" id="register-password" required placeholder="At least 6 characters..." autocomplete="new-password" />
+                </div>
+                <div id="register-error-msg" class="error-msg hidden"></div>
+                <button type="submit" id="register-submit-btn" class="btn btn-primary btn-block">Send OTP</button>
+              </form>
+
+              <!-- Forgot Password Form -->
+              <form id="forgot-form" class="auth-form hidden">
+                <h3 style="font-size: 1rem; margin-bottom: 0.75rem; color: #fff;">Reset Password</h3>
+                <div class="form-group">
+                  <label for="forgot-email">Email Address</label>
+                  <input type="email" id="forgot-email" required placeholder="Enter registered email..." autocomplete="email" />
+                </div>
+                <div id="forgot-error-msg" class="error-msg hidden"></div>
+                <button type="submit" id="forgot-submit-btn" class="btn btn-primary btn-block">Send Reset Code</button>
+                <div style="text-align: center; margin-top: 1rem;">
+                  <a href="#" id="back-to-login-link" style="color: var(--color-text-muted); font-size: 0.8rem; text-decoration: none;">Back to Login</a>
+                </div>
+              </form>
+
+              <!-- OTP Verification View -->
+              <div id="otp-view" class="auth-form hidden">
+                <h3 style="font-size: 1.05rem; margin-bottom: 0.5rem; color: #fff; text-align: center;" id="otp-title">Email Verification</h3>
+                <p style="font-size: 0.8rem; color: var(--color-text-muted); text-align: center; margin-bottom: 1.25rem;" id="otp-description">We sent a 6-digit code to your email.</p>
+                
+                <div class="form-group">
+                  <label for="otp-code-input">6-Digit Verification Code</label>
+                  <input type="text" id="otp-code-input" maxlength="6" placeholder="000000" style="text-align: center; letter-spacing: 5px; font-weight: 700; font-size: 1.25rem;" />
+                </div>
+
+                <div class="form-group hidden" id="otp-new-password-group">
+                  <label for="otp-new-password">New Password</label>
+                  <input type="password" id="otp-new-password" placeholder="At least 6 characters..." autocomplete="new-password" />
+                </div>
+
+                <div id="otp-error-msg" class="error-msg hidden"></div>
+                <button id="otp-submit-btn" class="btn btn-primary btn-block">Verify Code</button>
+                
+                <div style="text-align: center; margin-top: 1rem;">
+                  <a href="#" id="otp-cancel-link" style="color: var(--color-text-muted); font-size: 0.8rem; text-decoration: none;">Cancel</a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column: Simplified Blurred Glass Welcome Section -->
+            <div class="auth-split-right">
+              <div class="auth-decor-content">
+                <div class="auth-decor-badge">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                  <span>Watch Party</span>
+                </div>
+                <h3 class="auth-decor-heading" style="font-size: 1.8rem; font-weight: 800; line-height: 1.3;">Welcome to Watch Party...</h3>
+                <p class="auth-decor-desc" style="font-size: 0.95rem; line-height: 1.6; opacity: 0.85;">Synchronize videos and watch seamlessly with your friends in real-time.</p>
+              </div>
             </div>
           </div>
         </div>
@@ -129,6 +221,18 @@
             <p class="card-description">Persistent watch party rooms saved to your account. Click Enter Room to start watching.</p>
             <div id="profile-rooms-grid" class="profile-rooms-grid">
               <div class="search-placeholder">Loading rooms...</div>
+            </div>
+          </section>
+
+          <!-- My Saved Playlists Section -->
+          <section class="glass-card profile-playlists-section" style="margin-top: 1.5rem;">
+            <div class="section-header-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <h2 class="card-title" style="margin: 0;">My Saved Playlists</h2>
+              <button id="create-playlist-btn" class="btn btn-primary btn-sm" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;">+ Create Playlist</button>
+            </div>
+            <p class="card-description">Save video playlists to your personal library.</p>
+            <div id="profile-playlists-grid" class="profile-rooms-grid" style="margin-top: 1rem;">
+              <div class="search-placeholder">Loading playlists...</div>
             </div>
           </section>
         </div>
@@ -248,6 +352,7 @@
             <section class="glass-card discussion-card">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                 <h2 class="card-title" style="margin-bottom: 0;">Real-Time Discussion</h2>
+                <button id="clear-chat-btn" class="btn btn-danger-outline hidden" style="font-size: 0.7rem; padding: 0.2rem 0.5rem;" title="Clear Chat History (Host Only)">Clear Chat</button>
               </div>
               <p class="card-description">Share thoughts & tag video timestamps in real-time</p>
               
@@ -313,89 +418,7 @@
       </div>
     </div>
 
-    <!-- Auth Modal -->
-    <div id="auth-modal" class="modal-overlay hidden" style="display: none !important;">
-      <div class="glass-card modal-card">
-        <button id="close-auth-modal-btn" class="btn-close">&times;</button>
-        
-        <div class="modal-tabs">
-          <button id="tab-login" class="tab-btn active">Login</button>
-          <button id="tab-register" class="tab-btn">Register</button>
-        </div>
 
-        <!-- Login Form -->
-        <form id="login-form" class="auth-form">
-          <div class="form-group">
-            <label for="login-username">Username</label>
-            <input type="text" id="login-username" required placeholder="Enter username..." autocomplete="username" />
-          </div>
-          <div class="form-group">
-            <label for="login-password">Password</label>
-            <input type="password" id="login-password" required placeholder="Enter password..." autocomplete="current-password" />
-          </div>
-          <div style="text-align: right; margin-top: -0.5rem; margin-bottom: 1rem;">
-            <a href="#" id="forgot-password-link" style="color: var(--color-text-main); font-size: 0.8rem; text-decoration: underline;">Forgot password?</a>
-          </div>
-          <div id="login-error-msg" class="error-msg hidden"></div>
-          <button type="submit" id="login-submit-btn" class="btn btn-primary btn-block">Login</button>
-        </form>
-
-        <!-- Register Form -->
-        <form id="register-form" class="auth-form hidden">
-          <div class="form-group">
-            <label for="register-username">Username</label>
-            <input type="text" id="register-username" required placeholder="At least 3 characters..." autocomplete="username" />
-          </div>
-          <div class="form-group">
-            <label for="register-email">Email</label>
-            <input type="email" id="register-email" required placeholder="Enter email address..." autocomplete="email" />
-          </div>
-          <div class="form-group">
-            <label for="register-password">Password</label>
-            <input type="password" id="register-password" required placeholder="At least 6 characters..." autocomplete="new-password" />
-          </div>
-          <div id="register-error-msg" class="error-msg hidden"></div>
-          <button type="submit" id="register-submit-btn" class="btn btn-primary btn-block">Send OTP</button>
-        </form>
-
-        <!-- Forgot Password Form -->
-        <form id="forgot-form" class="auth-form hidden">
-          <h3 style="font-size: 1rem; margin-bottom: 1rem; color: #fff;">Reset Password</h3>
-          <div class="form-group">
-            <label for="forgot-email">Email Address</label>
-            <input type="email" id="forgot-email" required placeholder="Enter registered email..." autocomplete="email" />
-          </div>
-          <div id="forgot-error-msg" class="error-msg hidden"></div>
-          <button type="submit" id="forgot-submit-btn" class="btn btn-primary btn-block">Send Reset Code</button>
-          <div style="text-align: center; margin-top: 1rem;">
-            <a href="#" id="back-to-login-link" style="color: var(--color-text-muted); font-size: 0.8rem; text-decoration: none;">Back to Login</a>
-          </div>
-        </form>
-
-        <!-- OTP Verification View -->
-        <div id="otp-view" class="auth-form hidden">
-          <h3 style="font-size: 1.05rem; margin-bottom: 0.5rem; color: #fff; text-align: center;" id="otp-title">Email Verification</h3>
-          <p style="font-size: 0.8rem; color: var(--color-text-muted); text-align: center; margin-bottom: 1.5rem;" id="otp-description">We sent a 6-digit code to your email.</p>
-          
-          <div class="form-group">
-            <label for="otp-code-input">6-Digit Verification Code</label>
-            <input type="text" id="otp-code-input" maxlength="6" placeholder="000000" style="text-align: center; letter-spacing: 5px; font-weight: 700; font-size: 1.25rem;" />
-          </div>
-
-          <div class="form-group hidden" id="otp-new-password-group">
-            <label for="otp-new-password">New Password</label>
-            <input type="password" id="otp-new-password" placeholder="At least 6 characters..." autocomplete="new-password" />
-          </div>
-
-          <div id="otp-error-msg" class="error-msg hidden"></div>
-          <button id="otp-submit-btn" class="btn btn-primary btn-block">Verify Code</button>
-          
-          <div style="text-align: center; margin-top: 1.25rem;">
-            <a href="#" id="otp-cancel-link" style="color: var(--color-text-muted); font-size: 0.8rem; text-decoration: none;">Cancel</a>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <!-- Create Room Modal -->
     <div id="create-room-modal" class="modal-overlay hidden" style="display: none !important;">
@@ -463,6 +486,48 @@
           <div id="edit-room-error" class="error-msg hidden"></div>
           <button type="submit" id="edit-room-submit-btn" class="btn btn-primary btn-block">Save Changes</button>
         </form>
+      </div>
+    </div>
+
+    <!-- Create Playlist Modal -->
+    <div id="create-playlist-modal" class="modal-overlay hidden" style="display: none !important;">
+      <div class="glass-card modal-card">
+        <button type="button" id="close-create-playlist-modal-btn" class="btn-close">&times;</button>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem; color: #fff;">Create Saved Playlist</h3>
+        <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 1.25rem;">Create a personal video playlist in your account.</p>
+
+        <form id="create-playlist-form">
+          <div class="form-group">
+            <label for="playlist-title-input">Playlist Title</label>
+            <input type="text" id="playlist-title-input" required placeholder="e.g. Chill Music Videos, Study Mix..." />
+          </div>
+          <div class="form-group">
+            <label for="playlist-desc-input">Description (Optional)</label>
+            <input type="text" id="playlist-desc-input" placeholder="e.g. My favorite background music" />
+          </div>
+          <div id="create-playlist-error" class="error-msg hidden"></div>
+          <button type="submit" id="create-playlist-submit-btn" class="btn btn-primary btn-block">Create Playlist</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Manage Playlist Details Modal -->
+    <div id="manage-playlist-modal" class="modal-overlay hidden" style="display: none !important;">
+      <div class="glass-card modal-card" style="max-width: 600px; width: 90%;">
+        <button type="button" id="close-manage-playlist-modal-btn" class="btn-close">&times;</button>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; padding-right: 1.5rem;">
+          <div>
+            <h3 id="manage-playlist-title" style="font-size: 1.2rem; color: #fff; margin: 0;">Playlist Details</h3>
+            <p id="manage-playlist-desc" style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 0.25rem;"></p>
+          </div>
+          <button id="load-playlist-to-room-btn" class="btn btn-primary btn-sm hidden" style="font-size: 0.8rem; padding: 0.4rem 0.8rem; white-space: nowrap;">
+            ▶ Push to Room Queue
+          </button>
+        </div>
+
+        <div id="manage-playlist-items-list" style="max-height: 320px; overflow-y: auto; margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.5rem;">
+          <div class="search-placeholder">Loading songs...</div>
+        </div>
       </div>
     </div>
 

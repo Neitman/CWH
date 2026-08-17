@@ -1,9 +1,10 @@
-import { currentUser, getUserRooms, createRoomAPI, updateRoomAPI, deleteRoomAPI, joinRoomAPI, uploadAvatar, updateDisplayName, fetchUserProfile } from '../api';
+import { currentUser, getUserRooms, createRoomAPI, updateRoomAPI, deleteRoomAPI, joinRoomAPI, uploadAvatar, updateDisplayName, fetchUserProfile, getUserPlaylists, createPlaylistAPI, getPlaylistDetailsAPI, deletePlaylistAPI, removeSongFromPlaylistAPI } from '../api';
 import { switchPage } from '../router';
-import { UserRoom } from '../types';
+import { UserRoom, UserPlaylist } from '../types';
 import { updateAuthHeaderUI } from './homeView';
 
 let userRooms: UserRoom[] = [];
+let userPlaylists: UserPlaylist[] = [];
 let showToastFn: (msg: string, type: 'info' | 'error' | 'success') => void = () => {};
 
 export function initProfileView(showToast: (msg: string, type: 'info' | 'error' | 'success') => void) {
@@ -251,8 +252,61 @@ export function initProfileView(showToast: (msg: string, type: 'info' | 'error' 
     }
   });
 
+  // Create Playlist Modal Listeners
+  const createPlaylistBtn = document.getElementById('create-playlist-btn');
+  const createPlaylistModal = document.getElementById('create-playlist-modal');
+  const closeCreatePlaylistModalBtn = document.getElementById('close-create-playlist-modal-btn');
+  const createPlaylistForm = document.getElementById('create-playlist-form') as HTMLFormElement;
+  const playlistTitleInput = document.getElementById('playlist-title-input') as HTMLInputElement;
+  const playlistDescInput = document.getElementById('playlist-desc-input') as HTMLInputElement;
+  const createPlaylistError = document.getElementById('create-playlist-error');
+
+  const managePlaylistModal = document.getElementById('manage-playlist-modal');
+  const closeManagePlaylistModalBtn = document.getElementById('close-manage-playlist-modal-btn');
+
+  createPlaylistBtn?.addEventListener('click', () => {
+    if (!currentUser) {
+      showToast('Please log in to create playlists', 'error');
+      return;
+    }
+    if (playlistTitleInput) playlistTitleInput.value = '';
+    if (playlistDescInput) playlistDescInput.value = '';
+    if (createPlaylistError) createPlaylistError.classList.add('hidden');
+    showModal(createPlaylistModal);
+  });
+
+  closeCreatePlaylistModalBtn?.addEventListener('click', () => hideModal(createPlaylistModal));
+  createPlaylistModal?.addEventListener('click', (e) => {
+    if (e.target === createPlaylistModal) hideModal(createPlaylistModal);
+  });
+
+  closeManagePlaylistModalBtn?.addEventListener('click', () => hideModal(managePlaylistModal));
+  managePlaylistModal?.addEventListener('click', (e) => {
+    if (e.target === managePlaylistModal) hideModal(managePlaylistModal);
+  });
+
+  createPlaylistForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const title = playlistTitleInput.value.trim();
+    const description = playlistDescInput.value.trim();
+    if (!title) return;
+
+    const res = await createPlaylistAPI(title, description);
+    if (res.success) {
+      hideModal(createPlaylistModal);
+      showToast('Playlist created successfully!', 'success');
+      refreshProfilePlaylists();
+    } else {
+      if (createPlaylistError) {
+        createPlaylistError.textContent = res.error || 'Failed to create playlist.';
+        createPlaylistError.classList.remove('hidden');
+      }
+    }
+  });
+
   renderProfileDetails();
   refreshProfileRooms();
+  refreshProfilePlaylists();
 }
 
 export async function renderProfileDetails() {
@@ -360,4 +414,126 @@ export async function refreshProfileRooms() {
 
     roomsContainer.appendChild(item);
   });
+}
+
+export async function refreshProfilePlaylists() {
+  const container = document.getElementById('profile-playlists-grid');
+  if (!container) return;
+
+  let user = currentUser;
+  if (!user) {
+    user = await fetchUserProfile();
+  }
+
+  if (!user) {
+    container.innerHTML = '<div class="search-placeholder">Log in to view your playlists</div>';
+    return;
+  }
+
+  container.innerHTML = '<div class="search-placeholder">Loading your playlists...</div>';
+  userPlaylists = await getUserPlaylists();
+
+  if (userPlaylists.length === 0) {
+    container.innerHTML = '<div class="search-placeholder">No saved playlists yet. Click "+ Create Playlist" to start building your library!</div>';
+    return;
+  }
+
+  container.innerHTML = '';
+  userPlaylists.forEach(playlist => {
+    const item = document.createElement('div');
+    item.className = 'room-card-item';
+    item.innerHTML = `
+      <div class="room-card-header">
+        <h3 class="room-card-title">🎵 ${playlist.title}</h3>
+        <span class="badge" style="font-size: 0.75rem;">${playlist.song_count || 0} Songs</span>
+      </div>
+      <p class="room-card-desc">${playlist.description || 'No description provided.'}</p>
+      <div class="room-card-footer">
+        <button class="btn btn-primary btn-sm btn-view-playlist" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;">
+          View / Edit Songs
+        </button>
+        <button class="btn btn-icon btn-icon-sm btn-delete-playlist" title="Delete Playlist" style="color: var(--color-danger);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+        </button>
+      </div>
+    `;
+
+    item.querySelector('.btn-view-playlist')?.addEventListener('click', async () => {
+      openManagePlaylistModal(playlist);
+    });
+
+    item.querySelector('.btn-delete-playlist')?.addEventListener('click', async () => {
+      if (!confirm(`Are you sure you want to delete playlist "${playlist.title}"?`)) return;
+      const res = await deletePlaylistAPI(playlist.id);
+      if (res.success) {
+        showToastFn('Playlist deleted successfully!', 'success');
+        refreshProfilePlaylists();
+      } else {
+        showToastFn(res.error || 'Failed to delete playlist', 'error');
+      }
+    });
+
+    container.appendChild(item);
+  });
+}
+
+export async function openManagePlaylistModal(playlist: UserPlaylist) {
+  const modal = document.getElementById('manage-playlist-modal');
+  const titleEl = document.getElementById('manage-playlist-title');
+  const descEl = document.getElementById('manage-playlist-desc');
+  const itemsContainer = document.getElementById('manage-playlist-items-list');
+
+  if (titleEl) titleEl.textContent = playlist.title;
+  if (descEl) descEl.textContent = playlist.description || 'No description provided.';
+  if (itemsContainer) itemsContainer.innerHTML = '<div class="search-placeholder">Loading playlist songs...</div>';
+
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.setAttribute('style', 'display: flex !important;');
+  }
+
+  const res = await getPlaylistDetailsAPI(playlist.id);
+  if (!res.success || !res.items) {
+    if (itemsContainer) itemsContainer.innerHTML = '<div class="search-placeholder">Failed to load playlist items.</div>';
+    return;
+  }
+
+  if (res.items.length === 0) {
+    if (itemsContainer) itemsContainer.innerHTML = '<div class="search-placeholder">This playlist is empty. Add songs while searching videos!</div>';
+    return;
+  }
+
+  if (itemsContainer) {
+    itemsContainer.innerHTML = '';
+    res.items.forEach((item: any) => {
+      const el = document.createElement('div');
+      el.className = 'playlist-item';
+      el.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.06); gap: 0.5rem;';
+      const thumb = item.thumbnail || (item.songId ? `https://img.youtube.com/vi/${item.songId}/mqdefault.jpg` : '');
+
+      el.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 0.6rem; overflow: hidden; flex: 1;">
+          ${thumb ? `<img src="${thumb}" style="width: 44px; height: 30px; object-fit: cover; border-radius: 4px; flex-shrink: 0;" />` : ''}
+          <div style="overflow: hidden; flex: 1;">
+            <h4 style="font-size: 0.85rem; color: #fff; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.title}</h4>
+            <span style="font-size: 0.7rem; color: var(--color-text-muted);">${item.channelTitle || ''}</span>
+          </div>
+        </div>
+        <button class="btn-remove-playlist-item" style="background: none; border: none; color: var(--color-danger); cursor: pointer; font-size: 0.9rem; padding: 0.2rem 0.4rem;" title="Remove song">✕</button>
+      `;
+
+      el.querySelector('.btn-remove-playlist-item')?.addEventListener('click', async () => {
+        const delRes = await removeSongFromPlaylistAPI(playlist.id, item.id);
+        if (delRes.success) {
+          showToastFn('Song removed from playlist', 'info');
+          openManagePlaylistModal(playlist);
+          refreshProfilePlaylists();
+        } else {
+          showToastFn(delRes.error || 'Failed to remove song', 'error');
+        }
+      });
+
+      itemsContainer.appendChild(el);
+    });
+  }
 }
