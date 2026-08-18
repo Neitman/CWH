@@ -90,9 +90,11 @@ io.use((socket, next) => {
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as { id: number; username: string; displayName?: string };
       socket.data.username = decoded.displayName || decoded.username;
+      socket.data.rawUsername = decoded.username;
       socket.data.userId = decoded.id;
     } catch (err) {
       socket.data.username = `User_${Math.floor(1000 + Math.random() * 9000)}`;
+      socket.data.rawUsername = socket.data.username;
       socket.data.userId = 0;
     }
   } else {

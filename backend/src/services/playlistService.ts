@@ -180,28 +180,59 @@ export async function playNextSong(roomId: string): Promise<{ currentSong: Song 
   }
 }
 
-// Get the room host from Redis
+import { query } from '../db';
+
+export async function getRoomHostInfo(roomId: string): Promise<{ username: string; displayName: string } | null> {
+  try {
+    const dbRes = await query(
+      'SELECT u.username, u.display_name FROM user_rooms ur JOIN users u ON ur.user_id = u.id WHERE LOWER(ur.room_id) = LOWER($1)',
+      [roomId]
+    );
+    if (dbRes.rows.length > 0) {
+      const owner = dbRes.rows[0];
+      return {
+        username: owner.username,
+        displayName: owner.display_name || owner.username
+      };
+    }
+  } catch (err) {
+    console.error('Error fetching room host from DB:', err);
+  }
+  const redisHost = await redis.get(`wp:${roomId}:host`);
+  if (redisHost) {
+    return { username: redisHost, displayName: redisHost };
+  }
+  return null;
+}
+
+// Get the room host (Check PostgreSQL user_rooms first, fallback to Redis)
 export async function getRoomHost(roomId: string): Promise<string | null> {
-  return redis.get(`wp:${roomId}:host`);
+  const info = await getRoomHostInfo(roomId);
+  return info ? info.username : null;
 }
 
 // Set the room host in Redis if it doesn't exist
 export async function setRoomHost(roomId: string, username: string): Promise<boolean> {
+  const existingHost = await getRoomHost(roomId);
+  if (existingHost) return false;
   const result = await redis.setnx(`wp:${roomId}:host`, username);
   return result === 1;
 }
 
-// Check if a user has write permission in the room (all room members have full access)
+// Check if a user has write permission in the room
 export async function hasWritePermission(roomId: string, username: string): Promise<boolean> {
-  return true;
+  const host = await getRoomHost(roomId);
+  if (!host || username === host) return true;
+  const isRevoked = await redis.sismember(`wp:${roomId}:revoked_permissions`, username);
+  return isRevoked !== 1;
 }
 
 // Grant write permission to a user
 export async function grantWritePermission(roomId: string, username: string): Promise<void> {
-  await redis.sadd(`wp:${roomId}:write_permissions`, username);
+  await redis.srem(`wp:${roomId}:revoked_permissions`, username);
 }
 
 // Revoke write permission from a user
 export async function revokeWritePermission(roomId: string, username: string): Promise<void> {
-  await redis.srem(`wp:${roomId}:write_permissions`, username);
+  await redis.sadd(`wp:${roomId}:revoked_permissions`, username);
 }

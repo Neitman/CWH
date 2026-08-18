@@ -4,66 +4,48 @@ import * as discussionService from '../services/discussionService';
 
 export const registerStudyHandlers = (io: Server, socket: Socket, roomId: string) => {
   const clientName = socket.data.username || `Guest ${socket.id.slice(0, 4)}`;
-  console.log(`Client connected to STG study room: ${clientName} (Socket: ${socket.id}) in Room: ${roomId}`);
-  
+  console.log(`Client connected to Watch Party room: ${clientName} (Socket: ${socket.id}) in Room: ${roomId}`);
+
   // Helper to emit updated members list of this room
   const emitRoomMembers = async () => {
     try {
       const sockets = await io.in(roomId).fetchSockets();
-      const rawMembers = sockets.map(s => s.data.username || `Guest ${s.id.slice(0, 4)}`);
-      const uniqueMembers = Array.from(new Set(rawMembers));
+      const hostInfo = await playlistService.getRoomHostInfo(roomId);
       
-      const host = await playlistService.getRoomHost(roomId);
-      
-      const membersData = await Promise.all(uniqueMembers.map(async (username) => {
-        const isHost = username === host;
-        const canWrite = isHost || (await playlistService.hasWritePermission(roomId, username));
-        return {
-          username,
+      const rawMembersMap = new Map<string, { username: string; displayName: string; isHost: boolean; canWrite: boolean }>();
+
+      for (const s of sockets) {
+        const displayName = s.data.username || `Guest ${s.id.slice(0, 4)}`;
+        const rawUsername = s.data.rawUsername || displayName;
+        
+        const isHost = hostInfo 
+          ? (rawUsername.toLowerCase() === hostInfo.username.toLowerCase() || displayName.toLowerCase() === hostInfo.displayName.toLowerCase())
+          : false;
+        
+        let canWrite = true;
+        if (s.data.canWrite !== undefined) {
+          canWrite = s.data.canWrite;
+        }
+
+        rawMembersMap.set(rawUsername.toLowerCase(), {
+          username: rawUsername,
+          displayName,
           isHost,
           canWrite
-        };
-      }));
+        });
+      }
 
+      const members = Array.from(rawMembersMap.values());
       io.to(roomId).emit('room-members-updated', {
-        members: membersData,
-        count: uniqueMembers.length
+        members,
+        count: sockets.length
       });
     } catch (err) {
-      console.error('Error fetching room members:', err);
+      console.error('Error emitting room members:', err);
     }
   };
 
-  // Auto-register host if not set and broadcast roster
-  (async () => {
-    try {
-      await playlistService.setRoomHost(roomId, socket.data.username);
-    } catch (err) {
-      console.error('Error auto-setting host on connect:', err);
-    }
-    await emitRoomMembers();
-  })();
-
-  // Sync initial state (playlist, playback, chat history) with newly connected client
-  (async () => {
-    try {
-      const playlist = await playlistService.getPlaylistQueue(roomId);
-      const { currentSong, playback } = await playlistService.getPlaybackState(roomId);
-      const chatHistory = await discussionService.getRecentDiscussionMessages(roomId);
-      
-      socket.emit('sync-state', {
-        playlist,
-        currentSong,
-        playback: {
-          isPlaying: playback.isPlaying,
-          progress: playback.progress
-        },
-        chatHistory
-      });
-    } catch (error) {
-      console.error('Error syncing connection state:', error);
-    }
-  })();
+  emitRoomMembers();
 
   // Helper to handle skip/pop to next video
   const playNextSong = async () => {
@@ -88,39 +70,74 @@ export const registerStudyHandlers = (io: Server, socket: Socket, roomId: string
     }
   };
 
-  // --- REAL-TIME DISCUSSION HANDLERS ---
-  socket.on('send-discussion-message', async (data: { message: string; videoTimestamp?: number | null }) => {
-    if (!data || !data.message || !data.message.trim()) return;
+  // Socket joins specific room
+  socket.join(roomId);
+
+  // Send current room state (playlist + chat history + playback progress)
+  (async () => {
     try {
-      const username = socket.data.username || `Guest ${socket.id.slice(0, 4)}`;
-      const userId = socket.data.userId || null;
-      const videoTimestamp = typeof data.videoTimestamp === 'number' ? Math.floor(data.videoTimestamp) : null;
+      const playlist = await playlistService.getPlaylistQueue(roomId);
+      const { currentSong, playback } = await playlistService.getPlaybackState(roomId);
+      const chatHistory = await discussionService.getRecentDiscussionMessages(roomId);
       
-      const newMsg = await discussionService.saveDiscussionMessage(
+      socket.emit('sync-state', {
+        playlist,
+        currentSong,
+        playback: {
+          isPlaying: playback.isPlaying,
+          progress: playback.progress
+        },
+        chatHistory
+      });
+    } catch (error) {
+      console.error(`Error syncing state for room ${roomId}:`, error);
+    }
+  })();
+
+  // --- DISCUSSION / CHAT HANDLERS ---
+  socket.on('send-discussion-message', async (data: { message: string; videoTimestamp?: number }) => {
+    if (!socket.data.username) {
+      socket.emit('auth-error', { error: 'Please log in to send chat messages.' });
+      return;
+    }
+
+    const canWrite = await playlistService.hasWritePermission(roomId, socket.data.username);
+    if (!canWrite) {
+      socket.emit('auth-error', { error: 'You have Read Only permission in this room.' });
+      return;
+    }
+
+    try {
+      const savedMsg = await discussionService.saveDiscussionMessage(
         roomId,
-        userId,
-        username,
-        data.message.trim(),
-        videoTimestamp
+        socket.data.userId || null,
+        socket.data.username,
+        data.message,
+        data.videoTimestamp || 0
       );
-      
-      io.to(roomId).emit('new-discussion-message', newMsg);
-      console.log(`[Room ${roomId}] New discussion message from ${username}${videoTimestamp !== null ? ` (@ ${videoTimestamp}s)` : ''}`);
+
+      io.to(roomId).emit('new-discussion-message', savedMsg);
     } catch (err) {
       console.error('Error saving discussion message:', err);
     }
   });
 
   socket.on('clear-discussion', async () => {
+    if (!socket.data.username) return;
+
+    const hostInfo = await playlistService.getRoomHostInfo(roomId);
+    const isHost = hostInfo 
+      ? (socket.data.username.toLowerCase() === hostInfo.username.toLowerCase() || socket.data.username.toLowerCase() === hostInfo.displayName.toLowerCase())
+      : false;
+
+    if (!isHost) {
+      socket.emit('auth-error', { error: 'Only the room host can clear chat history.' });
+      return;
+    }
+
     try {
-      const host = await playlistService.getRoomHost(roomId);
-      if (socket.data.username !== host) {
-        socket.emit('auth-error', { error: 'Only the room host can clear discussion history.' });
-        return;
-      }
       await discussionService.clearDiscussionMessages(roomId);
       io.to(roomId).emit('discussion-cleared');
-      console.log(`[Room ${roomId}] Discussion history cleared by host ${host}`);
     } catch (err) {
       console.error('Error clearing discussion:', err);
     }
@@ -128,8 +145,14 @@ export const registerStudyHandlers = (io: Server, socket: Socket, roomId: string
 
   // --- YOUTUBE PLAYLIST & PLAYBACK HANDLERS ---
   socket.on('add-song', async (songData: Omit<playlistService.Song, 'addedBy'>) => {
-    if (socket.data.userId === undefined || socket.data.userId === null) {
-      socket.emit('auth-error', { error: 'Please log in to add videos to the study queue.' });
+    if (!socket.data.username) {
+      socket.emit('auth-error', { error: 'Please log in to add videos to the room queue.' });
+      return;
+    }
+
+    const canWrite = await playlistService.hasWritePermission(roomId, socket.data.username);
+    if (!canWrite) {
+      socket.emit('auth-error', { error: 'You have Read Only permission in this room.' });
       return;
     }
 
@@ -154,8 +177,14 @@ export const registerStudyHandlers = (io: Server, socket: Socket, roomId: string
   });
 
   socket.on('add-songs', async (songsData: Omit<playlistService.Song, 'addedBy'>[]) => {
-    if (socket.data.userId === undefined || socket.data.userId === null) {
+    if (!socket.data.username) {
       socket.emit('auth-error', { error: 'Please log in to add videos.' });
+      return;
+    }
+
+    const canWrite = await playlistService.hasWritePermission(roomId, socket.data.username);
+    if (!canWrite) {
+      socket.emit('auth-error', { error: 'You have Read Only permission in this room.' });
       return;
     }
 
@@ -182,8 +211,14 @@ export const registerStudyHandlers = (io: Server, socket: Socket, roomId: string
   });
 
   socket.on('remove-song', async (songId: string) => {
-    if (socket.data.userId === undefined || socket.data.userId === null) {
+    if (!socket.data.username) {
       socket.emit('auth-error', { error: 'Please log in to remove videos.' });
+      return;
+    }
+
+    const canWrite = await playlistService.hasWritePermission(roomId, socket.data.username);
+    if (!canWrite) {
+      socket.emit('auth-error', { error: 'You have Read Only permission in this room.' });
       return;
     }
 
@@ -197,8 +232,14 @@ export const registerStudyHandlers = (io: Server, socket: Socket, roomId: string
   });
 
   socket.on('set-playback', async (state: { isPlaying: boolean; progress: number }) => {
-    if (socket.data.userId === undefined || socket.data.userId === null) {
+    if (!socket.data.username) {
       socket.emit('auth-error', { error: 'Please log in to control playback.' });
+      return;
+    }
+
+    const canWrite = await playlistService.hasWritePermission(roomId, socket.data.username);
+    if (!canWrite) {
+      socket.emit('auth-error', { error: 'You have Read Only permission in this room.' });
       return;
     }
 
@@ -218,24 +259,30 @@ export const registerStudyHandlers = (io: Server, socket: Socket, roomId: string
   });
 
   socket.on('next-song', async () => {
-    if (socket.data.userId === undefined || socket.data.userId === null) {
+    if (!socket.data.username) {
       socket.emit('auth-error', { error: 'Please log in to skip videos.' });
       return;
     }
+
+    const canWrite = await playlistService.hasWritePermission(roomId, socket.data.username);
+    if (!canWrite) {
+      socket.emit('auth-error', { error: 'You have Read Only permission in this room.' });
+      return;
+    }
+
     await playNextSong();
   });
 
   socket.on('toggle-permission', async (data: { targetUsername: string, canWrite: boolean }) => {
-    if (!socket.data.userId) return;
+    if (!socket.data.username) return;
     try {
-      const host = await playlistService.getRoomHost(roomId);
-      if (socket.data.username !== host) {
+      const hostInfo = await playlistService.getRoomHostInfo(roomId);
+      const isHost = hostInfo 
+        ? (socket.data.username.toLowerCase() === hostInfo.username.toLowerCase() || socket.data.username.toLowerCase() === hostInfo.displayName.toLowerCase())
+        : false;
+
+      if (!isHost) {
         socket.emit('auth-error', { error: 'Only the room host can modify permissions.' });
-        return;
-      }
-      
-      if (data.targetUsername === host) {
-        socket.emit('auth-error', { error: 'Cannot modify permissions of the room host.' });
         return;
       }
       
@@ -245,7 +292,7 @@ export const registerStudyHandlers = (io: Server, socket: Socket, roomId: string
         await playlistService.revokeWritePermission(roomId, data.targetUsername);
       }
       
-      console.log(`[Room ${roomId}] Permission toggled for ${data.targetUsername}: canWrite=${data.canWrite} by host ${host}`);
+      console.log(`[Room ${roomId}] Permission toggled for ${data.targetUsername}: canWrite=${data.canWrite}`);
       await emitRoomMembers();
     } catch (err) {
       console.error('Error toggling permission:', err);

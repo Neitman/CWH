@@ -10,6 +10,18 @@ export function setActiveRoomId(roomId: string) {
   currentActiveRoomId = roomId;
 }
 
+export function openRoomInNewTab(roomId: string) {
+  const url = new URL(window.location.origin);
+  url.searchParams.set('room', roomId);
+  window.open(url.toString(), '_blank');
+}
+
+export function openProfileInNewTab() {
+  const url = new URL(window.location.origin);
+  window.open(url.toString(), '_blank');
+}
+
+
 export function switchPage(target: ViewMode, roomId?: string) {
   currentViewMode = target;
 
@@ -53,7 +65,7 @@ export function switchPage(target: ViewMode, roomId?: string) {
 
     if (profilePage) { profilePage.classList.add('hidden'); profilePage.setAttribute('style', 'display: none !important;'); }
     if (roomPage) { roomPage.classList.add('hidden'); roomPage.setAttribute('style', 'display: none !important;'); }
-    if (mainPage) { mainPage.classList.remove('hidden'); mainPage.setAttribute('style', 'display: block !important;'); }
+    if (mainPage) { mainPage.classList.remove('hidden'); mainPage.setAttribute('style', 'display: flex !important; justify-content: center; align-items: center; min-height: calc(100vh - 120px); padding: 1rem 0;'); }
     if (connectionStatus) { connectionStatus.classList.add('hidden'); }
   }
 }

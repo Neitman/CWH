@@ -1,6 +1,6 @@
 import './style.css';
 import { fetchUserProfile, currentUser } from './api';
-import { switchPage } from './router';
+import { switchPage, openProfileInNewTab } from './router';
 import { initHomeView, updateAuthHeaderUI } from './views/homeView';
 import { initProfileView, refreshProfileRooms, renderProfileDetails } from './views/profileView';
 import { initRoomView, connectToRoom } from './views/roomView';
@@ -37,19 +37,19 @@ export function showToast(message: string, type: 'info' | 'error' | 'success' = 
 const goToProfileBtn = document.getElementById('go-to-profile-btn');
 const headerLogoBtn = document.getElementById('header-logo-btn');
 
-goToProfileBtn?.addEventListener('click', () => {
+goToProfileBtn?.addEventListener('click', (e) => {
+  e.preventDefault();
   if (currentUser) {
-    switchPage('profile');
-    refreshProfileRooms();
+    openProfileInNewTab();
   } else {
     switchPage('main');
   }
 });
 
-headerLogoBtn?.addEventListener('click', () => {
+headerLogoBtn?.addEventListener('click', (e) => {
+  e.preventDefault();
   if (currentUser) {
-    switchPage('profile');
-    refreshProfileRooms();
+    openProfileInNewTab();
   } else {
     switchPage('main');
   }

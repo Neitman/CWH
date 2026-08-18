@@ -1,5 +1,5 @@
 \babel@toc {vietnamese}{}\relax 
 \beamer@sectionintoc {1}{PHẦN 1: GIỚI THIỆU}{3}{0}{1}
 \beamer@sectionintoc {2}{PHẦN 2: CÔNG VIỆC TRIỂN KHAI}{6}{0}{2}
-\beamer@sectionintoc {3}{PHẦN 3: CÁC KẾT QUẢ ĐẠT ĐƯỢC}{10}{0}{3}
-\beamer@sectionintoc {4}{KẾT LUẬN}{13}{0}{4}
+\beamer@sectionintoc {3}{PHẦN 3: CÁC KẾT QUẢ ĐẠT ĐƯỢC}{13}{0}{3}
+\beamer@sectionintoc {4}{KẾT LUẬN}{18}{0}{4}

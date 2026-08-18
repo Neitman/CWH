@@ -1,5 +1,5 @@
 import { currentUser, getUserRooms, createRoomAPI, updateRoomAPI, deleteRoomAPI, joinRoomAPI, uploadAvatar, updateDisplayName, fetchUserProfile, getUserPlaylists, createPlaylistAPI, getPlaylistDetailsAPI, deletePlaylistAPI, removeSongFromPlaylistAPI } from '../api';
-import { switchPage } from '../router';
+import { openRoomInNewTab } from '../router';
 import { UserRoom, UserPlaylist } from '../types';
 import { updateAuthHeaderUI } from './homeView';
 
@@ -119,19 +119,34 @@ export function initProfileView(showToast: (msg: string, type: 'info' | 'error' 
 
   createRoomForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const submitBtn = createRoomForm.querySelector('button[type="submit"]') as HTMLButtonElement;
+    if (submitBtn && submitBtn.disabled) return;
+
     const name = roomNameInput.value.trim();
     const description = roomDescInput.value.trim();
     if (!name) return;
 
-    const res = await createRoomAPI(name, description);
-    if (res.success && res.room) {
-      hideModal(createRoomModal);
-      await refreshProfileRooms();
-      switchPage('room', res.room.room_id);
-    } else {
-      if (createRoomError) {
-        createRoomError.textContent = res.error || 'Failed to create room.';
-        createRoomError.classList.remove('hidden');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creating...';
+    }
+
+    try {
+      const res = await createRoomAPI(name, description);
+      if (res.success && res.room) {
+        hideModal(createRoomModal);
+        await refreshProfileRooms();
+        openRoomInNewTab(res.room.room_id);
+      } else {
+        if (createRoomError) {
+          createRoomError.textContent = res.error || 'Failed to create room.';
+          createRoomError.classList.remove('hidden');
+        }
+      }
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create & Launch Room';
       }
     }
   });
@@ -194,7 +209,7 @@ export function initProfileView(showToast: (msg: string, type: 'info' | 'error' 
 
     if (res.success && res.room) {
       verifiedRoomCode = res.room.room_id;
-      if (joinRoomPreviewName) joinRoomPreviewName.textContent = `🟢 ${res.room.name}`;
+      if (joinRoomPreviewName) joinRoomPreviewName.textContent = res.room.name;
       if (joinRoomPreviewHost) joinRoomPreviewHost.textContent = `Host: @${res.room.owner_username}`;
       if (joinRoomPreviewDesc) joinRoomPreviewDesc.textContent = res.room.description ? `${res.room.description}` : '';
       if (joinRoomPreview) joinRoomPreview.classList.remove('hidden');
@@ -223,7 +238,7 @@ export function initProfileView(showToast: (msg: string, type: 'info' | 'error' 
     e.preventDefault();
     if (!verifiedRoomCode) return;
     hideModal(joinRoomModal);
-    switchPage('room', verifiedRoomCode);
+    openRoomInNewTab(verifiedRoomCode);
   });
 
   // Edit Room Modal Listeners
@@ -372,10 +387,10 @@ export async function refreshProfileRooms() {
       <div class="room-card-footer">
         <div style="display: flex; gap: 0.4rem;">
           <button class="btn btn-primary btn-sm btn-join-room" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;">
-            🟢 Enter Room
+            Enter Room
           </button>
-          <button class="btn btn-secondary-outline btn-sm btn-edit-room" style="font-size: 0.8rem; padding: 0.35rem 0.5rem;" title="Edit Room">
-            ✏️
+          <button class="btn btn-secondary-outline btn-sm btn-edit-room" style="font-size: 0.8rem; padding: 0.35rem 0.65rem;" title="Edit Room">
+            Edit
           </button>
         </div>
         <button class="btn btn-icon btn-icon-sm btn-delete-room" title="Delete Room" style="color: var(--color-danger);">
@@ -385,7 +400,7 @@ export async function refreshProfileRooms() {
     `;
 
     item.querySelector('.btn-join-room')?.addEventListener('click', () => {
-      switchPage('room', room.room_id);
+      openRoomInNewTab(room.room_id);
     });
 
     item.querySelector('.btn-edit-room')?.addEventListener('click', () => {
@@ -444,7 +459,7 @@ export async function refreshProfilePlaylists() {
     item.className = 'room-card-item';
     item.innerHTML = `
       <div class="room-card-header">
-        <h3 class="room-card-title">🎵 ${playlist.title}</h3>
+        <h3 class="room-card-title">${playlist.title}</h3>
         <span class="badge" style="font-size: 0.75rem;">${playlist.song_count || 0} Songs</span>
       </div>
       <p class="room-card-desc">${playlist.description || 'No description provided.'}</p>

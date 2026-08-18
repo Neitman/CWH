@@ -114,10 +114,61 @@ export function initHomeView(showToast: (msg: string, type: 'info' | 'error' | '
     switchPage('main');
   });
 
+  const loginSubmitBtn = document.getElementById('login-submit-btn') as HTMLButtonElement;
+  const registerSubmitBtn = document.getElementById('register-submit-btn') as HTMLButtonElement;
+  const forgotSubmitBtn = document.getElementById('forgot-submit-btn') as HTMLButtonElement;
+
+  let registerCooldownTimer: any = null;
+  let forgotCooldownTimer: any = null;
+
+  function startRegisterOtpCooldown() {
+    if (!registerSubmitBtn) return;
+    registerSubmitBtn.disabled = true;
+    let seconds = 60;
+    registerSubmitBtn.textContent = `Resend in ${seconds}s`;
+    if (registerCooldownTimer) clearInterval(registerCooldownTimer);
+    registerCooldownTimer = setInterval(() => {
+      seconds--;
+      if (seconds > 0) {
+        if (registerSubmitBtn) registerSubmitBtn.textContent = `Resend in ${seconds}s`;
+      } else {
+        clearInterval(registerCooldownTimer);
+        if (registerSubmitBtn) {
+          registerSubmitBtn.disabled = false;
+          registerSubmitBtn.textContent = 'Send OTP';
+        }
+      }
+    }, 1000);
+  }
+
+  function startForgotOtpCooldown() {
+    if (!forgotSubmitBtn) return;
+    forgotSubmitBtn.disabled = true;
+    let seconds = 60;
+    forgotSubmitBtn.textContent = `Resend in ${seconds}s`;
+    if (forgotCooldownTimer) clearInterval(forgotCooldownTimer);
+    forgotCooldownTimer = setInterval(() => {
+      seconds--;
+      if (seconds > 0) {
+        if (forgotSubmitBtn) forgotSubmitBtn.textContent = `Resend in ${seconds}s`;
+      } else {
+        clearInterval(forgotCooldownTimer);
+        if (forgotSubmitBtn) {
+          forgotSubmitBtn.disabled = false;
+          forgotSubmitBtn.textContent = 'Send Reset Code';
+        }
+      }
+    }, 1000);
+  }
+
   // Login Form Submit
   loginForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     loginErrorMsg.classList.add('hidden');
+    if (loginSubmitBtn) {
+      loginSubmitBtn.disabled = true;
+      loginSubmitBtn.textContent = 'Logging in...';
+    }
 
     const username = loginUsernameInput.value.trim();
     const password = loginPasswordInput.value;
@@ -149,6 +200,11 @@ export function initHomeView(showToast: (msg: string, type: 'info' | 'error' | '
     } catch (error) {
       loginErrorMsg.textContent = 'Server connection failed.';
       loginErrorMsg.classList.remove('hidden');
+    } finally {
+      if (loginSubmitBtn) {
+        loginSubmitBtn.disabled = false;
+        loginSubmitBtn.textContent = 'Login';
+      }
     }
   });
 
@@ -156,10 +212,16 @@ export function initHomeView(showToast: (msg: string, type: 'info' | 'error' | '
   registerForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     registerErrorMsg.classList.add('hidden');
+    if (registerSubmitBtn && registerSubmitBtn.disabled) return;
 
     const username = registerUsernameInput.value.trim();
     const email = registerEmailInput.value.trim();
     const password = registerPasswordInput.value;
+
+    if (registerSubmitBtn) {
+      registerSubmitBtn.disabled = true;
+      registerSubmitBtn.textContent = 'Sending OTP...';
+    }
 
     try {
       const res = await fetch('/api/auth/register-send-otp', {
@@ -170,6 +232,7 @@ export function initHomeView(showToast: (msg: string, type: 'info' | 'error' | '
 
       const data = await res.json();
       if (res.ok) {
+        startRegisterOtpCooldown();
         otpFlowType = 'register';
         otpFlowEmail = email;
         const otpTitle = document.getElementById('otp-title')!;
@@ -181,10 +244,18 @@ export function initHomeView(showToast: (msg: string, type: 'info' | 'error' | '
         otpSubmitBtn.textContent = 'Verify & Register';
         showOnlyForm('otp');
       } else {
+        if (registerSubmitBtn) {
+          registerSubmitBtn.disabled = false;
+          registerSubmitBtn.textContent = 'Send OTP';
+        }
         registerErrorMsg.textContent = data.error || 'Registration failed.';
         registerErrorMsg.classList.remove('hidden');
       }
     } catch (error) {
+      if (registerSubmitBtn) {
+        registerSubmitBtn.disabled = false;
+        registerSubmitBtn.textContent = 'Send OTP';
+      }
       registerErrorMsg.textContent = 'Server connection failed.';
       registerErrorMsg.classList.remove('hidden');
     }
@@ -194,8 +265,14 @@ export function initHomeView(showToast: (msg: string, type: 'info' | 'error' | '
   forgotForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
     forgotErrorMsg.classList.add('hidden');
+    if (forgotSubmitBtn && forgotSubmitBtn.disabled) return;
 
     const email = forgotEmailInput.value.trim();
+
+    if (forgotSubmitBtn) {
+      forgotSubmitBtn.disabled = true;
+      forgotSubmitBtn.textContent = 'Sending Reset Code...';
+    }
 
     try {
       const res = await fetch('/api/auth/forgot-password-send-otp', {
@@ -206,6 +283,7 @@ export function initHomeView(showToast: (msg: string, type: 'info' | 'error' | '
 
       const data = await res.json();
       if (res.ok) {
+        startForgotOtpCooldown();
         otpFlowType = 'reset';
         otpFlowEmail = email;
         const otpTitle = document.getElementById('otp-title')!;
@@ -218,10 +296,18 @@ export function initHomeView(showToast: (msg: string, type: 'info' | 'error' | '
         otpSubmitBtn.textContent = 'Verify & Reset Password';
         showOnlyForm('otp');
       } else {
+        if (forgotSubmitBtn) {
+          forgotSubmitBtn.disabled = false;
+          forgotSubmitBtn.textContent = 'Send Reset Code';
+        }
         forgotErrorMsg.textContent = data.error || 'Failed to send reset code.';
         forgotErrorMsg.classList.remove('hidden');
       }
     } catch (error) {
+      if (forgotSubmitBtn) {
+        forgotSubmitBtn.disabled = false;
+        forgotSubmitBtn.textContent = 'Send Reset Code';
+      }
       forgotErrorMsg.textContent = 'Server connection failed.';
       forgotErrorMsg.classList.remove('hidden');
     }
@@ -229,6 +315,7 @@ export function initHomeView(showToast: (msg: string, type: 'info' | 'error' | '
 
   // OTP Form Submit
   otpSubmitBtn?.addEventListener('click', async () => {
+    if (otpSubmitBtn.disabled) return;
     otpErrorMsg.classList.add('hidden');
     const otp = otpCodeInput.value.trim();
 
@@ -237,6 +324,10 @@ export function initHomeView(showToast: (msg: string, type: 'info' | 'error' | '
       otpErrorMsg.classList.remove('hidden');
       return;
     }
+
+    otpSubmitBtn.disabled = true;
+    const defaultText = otpFlowType === 'register' ? 'Verify & Register' : 'Verify & Reset Password';
+    otpSubmitBtn.textContent = 'Verifying...';
 
     try {
       if (otpFlowType === 'register') {
@@ -256,12 +347,16 @@ export function initHomeView(showToast: (msg: string, type: 'info' | 'error' | '
           updateAuthHeaderUI();
           switchPage('profile');
         } else {
+          otpSubmitBtn.disabled = false;
+          otpSubmitBtn.textContent = defaultText;
           otpErrorMsg.textContent = data.error || 'Verification failed.';
           otpErrorMsg.classList.remove('hidden');
         }
       } else {
         const newPassword = otpNewPasswordInput.value;
         if (!newPassword || newPassword.length < 6) {
+          otpSubmitBtn.disabled = false;
+          otpSubmitBtn.textContent = defaultText;
           otpErrorMsg.textContent = 'New password must be at least 6 characters.';
           otpErrorMsg.classList.remove('hidden');
           return;
@@ -274,14 +369,20 @@ export function initHomeView(showToast: (msg: string, type: 'info' | 'error' | '
         });
         const data = await res.json();
         if (res.ok) {
+          otpSubmitBtn.disabled = false;
+          otpSubmitBtn.textContent = defaultText;
           showToast('Password reset successfully! Please log in.', 'success');
           showOnlyForm('login');
         } else {
+          otpSubmitBtn.disabled = false;
+          otpSubmitBtn.textContent = defaultText;
           otpErrorMsg.textContent = data.error || 'Password reset failed.';
           otpErrorMsg.classList.remove('hidden');
         }
       }
     } catch (error) {
+      otpSubmitBtn.disabled = false;
+      otpSubmitBtn.textContent = defaultText;
       otpErrorMsg.textContent = 'Server connection failed.';
       otpErrorMsg.classList.remove('hidden');
     }

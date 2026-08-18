@@ -80,7 +80,6 @@
 
 Lời đầu tiên, em xin gửi lời cảm ơn chân thành và sâu sắc nhất tới toàn thể các thầy cô giáo trong Khoa Toán - Cơ - Tin học, Trường Đại học Khoa học Tự nhiên – Đại học Quốc gia Hà Nội đã tận tình giảng dạy, truyền đạt những kiến thức chuyên môn vững chắc và tư duy logic quý báu cho em trong suốt quá trình học tập tại trường.
 
-Đặc biệt, em xin bày tỏ lòng biết ơn sâu sắc tới các thầy cô hướng dẫn môn học Thực tập chuyên ngành đã luôn theo sát, định hướng chuyên môn quý báu giúp em hoàn thiện đề tài \textbf{"Ứng dụng WebSocket trong việc xây dựng trang web xem video đồng bộ trạng thái độ trễ thấp"}.
 
 Dù đã cố gắng hoàn thiện báo cáo và ứng dụng một cách chỉn chu, bài báo cáo không tránh khỏi những hạn chế nhất định. Em rất mong nhận được sự đóng góp ý kiến từ phía thầy cô để tiếp tục phát triển sản phẩm tốt hơn.
 
@@ -354,7 +353,34 @@ Hệ thống sử dụng 5 bảng dữ liệu quan hệ được chuẩn hóa:
 \subsubsection{Module Trò chuyện nhóm thời gian thực}
 Server lắng nghe sự kiện \texttt{send-discussion-message}, trích xuất \texttt{videoTimestamp} hiện tại, lưu tin nhắn vào PostgreSQL và phát sự kiện \texttt{new-discussion-message} cho toàn bộ thành viên trong phòng.
 
+\subsubsection{Module Xác thực OTP Email và Quản lý Hồ sơ cá nhân}
+\begin{itemize}[leftmargin=1.2cm]
+    \item \textbf{Xác thực OTP qua Email (Nodemailer \& Redis):} Quy trình xác thực 2 bước cho Đăng ký tài khoản và Quên/Khôi phục mật khẩu. Hệ thống tạo mã xác thực 6 chữ số ngẫu nhiên gửi tới email người dùng thông qua thư viện \texttt{Nodemailer} (tích hợp SMTP Gmail / Ethereal Test Email). Thông tin đăng ký tạm thời và mã OTP được lưu trữ đệm trong Redis với thời gian hết hạn (TTL) là $5$ phút (\texttt{300s}), giúp giảm tải bộ nhớ đĩa CSDL chính và đảm bảo tính bảo mật.
+    \item \textbf{Cơ chế Token kép (Dual Token System):} Hệ thống áp dụng mô hình bảo mật với hai loại token: Access Token ngắn hạn ($5$ phút) ký bằng thuật toán HMAC-SHA256 phục vụ xác thực các truy vấn REST API và kết nối WebSocket; và Refresh Token dài hạn ($7$ ngày) được lưu trữ an toàn trong HTTP-Only Cookie tại trình duyệt và đối chiếu trực tiếp với bộ nhớ Redis (\texttt{wp:refreshtoken:<userId>}). Endpoint \texttt{/refresh} hỗ trợ tự động gia hạn Access Token mà không gián đoạn trải nghiệm người dùng, đồng thời endpoint \texttt{/logout} chủ động thu hồi (revoke) Refresh Token khỏi Redis.
+    \item \textbf{Quản lý thông tin hồ sơ và Tải lên Ảnh đại diện (Avatar Upload):} Cung cấp các API xem chi tiết hồ sơ người dùng (\texttt{GET /api/auth/me}) và cập nhật tên hiển thị (\texttt{PUT /api/auth/profile}). Tính năng tải lên ảnh đại diện (\texttt{POST /api/auth/avatar}) được xử lý qua middleware \texttt{Multer}, tự động kiểm tra định dạng MIME (chỉ chấp nhận tệp hình ảnh), giới hạn dung lượng tối đa $5MB$, tạo tên tệp duy nhất theo timestamp và lưu trữ trong thư mục tĩnh \texttt{public/uploads/avatars}.
+\end{itemize}
+
+\subsubsection{Module Tải lên và Phát Trực tuyến Video Tùy chỉnh}
+\begin{itemize}[leftmargin=1.2cm]
+    \item \textbf{Tải lên Video địa phương (Custom Video Upload):} Ngoài việc nhúng các video phát từ YouTube, hệ thống hỗ trợ chủ phòng và các thành viên tải lên tệp video cá nhân từ máy tính (\texttt{POST /api/videos/upload}) với các định dạng phổ biến (\texttt{.mp4}, \texttt{.webm}, \texttt{.mkv}, \texttt{.avi}, \texttt{.mov}) và dung lượng hỗ trợ lên tới $10GB$. Tệp video được kiểm tra MIME-type và lưu trữ an toàn trong thư mục \texttt{public/uploads/videos}.
+    \item \textbf{Truyền dữ liệu phát phân đoạn chuẩn HTTP Range Requests:} Xây dựng tuyến đường API chuyên dụng \texttt{GET /api/videos/stream/:filename} xử lý header \texttt{Range} từ yêu cầu HTTP của trình duyệt. Server phản hồi mã trạng thái \texttt{206 Partial Content} kèm tiêu đề \texttt{Content-Range: bytes start-end/fileSize}, cho phép trình duyệt tải từng phân đoạn nhị phân (chunked streaming) dựa trên stream I/O của Node.js (\texttt{fs.createReadStream}). Cơ chế này giúp người dùng tua (seek) mượt mà đến mốc thời gian bất kỳ trong video dung lượng lớn mà không cần nạp toàn bộ tệp về máy.
+    \item \textbf{Cơ chế tự động dọn dẹp bộ nhớ đĩa (Auto Disk Cleanup):} Để hạn chế rò rỉ dung lượng ổ đĩa do các tệp video đã phát xong hoặc bị loại khỏi danh sách chờ, hệ thống tích hợp hàm \texttt{cleanupCustomVideoFile()} tự động thực thi xóa tệp vật lý bằng \texttt{fs.unlinkSync()} ngay khi bài hát bị gỡ khỏi Queue. Đồng thời, một Cron Job chạy ngầm định kỳ mỗi $1$ giờ sẽ quét thư mục tải lên và loại bỏ các tệp video tồn tại quá $6$ giờ.
+\end{itemize}
+
+\subsubsection{Module Phân quyền Chủ phòng và Quản lý Danh sách phát Cá nhân}
+\begin{itemize}[leftmargin=1.2cm]
+    \item \textbf{Phân quyền Chủ phòng (Host Permissions):} Hệ thống tự động nhận diện người tạo phòng xem là Host (đối chiếu dữ liệu từ PostgreSQL \texttt{user\_rooms} kết hợp bộ đệm Redis \texttt{wp:<roomId>:host}). Chủ phòng nắm quyền hạn cao nhất: thay đổi quyền tương tác của thành viên (\texttt{toggle-permission}: gán quyền Read-Only hoặc Write Permission cho người xem), xóa toàn bộ lịch sử chat phòng (\texttt{clear-discussion}), và thực hiện chuyển sang video tiếp theo (\texttt{next-song}). Sự thay đổi quyền tác vụ được cập nhật tức thì đến toàn bộ kết nối trong phòng qua sự kiện \texttt{room-members-updated}.
+    \item \textbf{Quản lý Danh sách phát cá nhân (Personal Playlists):} Người dùng có thể tự tạo các danh sách phát cá nhân lưu trữ bền vững trong PostgreSQL (\texttt{user\_playlists} và \texttt{user\_playlist\_items}). Module hỗ trợ đầy đủ các thao tác CRUD: thêm/xóa bài hát, cập nhật tiêu đề/mô tả, thay đổi thứ tự ưu tiên (Reorder items) theo chỉ số \texttt{position}, và cho phép nạp hàng loạt (Batch load) các bài hát từ playlist cá nhân vào hàng chờ (Queue) của phòng xem nhóm thời gian thực.
+\end{itemize}
+
+\subsubsection{Module Giám sát Hệ thống và Quản trị (Admin Dashboard)}
+\begin{itemize}[leftmargin=1.2cm]
+    \item \textbf{API Giám sát thông số máy chủ (\texttt{GET /api/admin/stats}):} Thu thập và phân tích trực tiếp tài nguyên phần cứng hệ thống thông qua module \texttt{os} của Node.js (tỷ lệ sử dụng RAM, số lượng nhân CPU, Uptime hệ thống) và kiểm tra trạng thái kết nối thời gian thực (Health Check) tới hai cơ sở dữ liệu PostgreSQL và Redis.
+    \item \textbf{Quản trị Phòng xem và Tài khoản người dùng:} Trang quản trị cung cấp các REST API cho phép Admin: quét toàn bộ danh sách các phòng đang hoạt động từ Redis (\texttt{GET /api/admin/rooms}); giải phóng bộ nhớ phòng và buộc ngắt kết nối các thành viên (\texttt{DELETE /api/admin/rooms/:roomId}); quản lý và xóa tài khoản người dùng khỏi PostgreSQL (\texttt{DELETE /api/admin/users/:id}); cũng như xóa sạch bộ nhớ đệm Redis (\texttt{POST /api/admin/redis/flush}) khi cần bảo trì hệ thống.
+\end{itemize}
+
 \newpage
+
 
 % ==================== PHẦN 3: CÁC KẾT QUẢ ĐẠT ĐƯỢC ====================
 \section{PHẦN 3: CÁC KẾT QUẢ ĐẠT ĐƯỢC}
@@ -363,9 +389,10 @@ Server lắng nghe sự kiện \texttt{send-discussion-message}, trích xuất \
 
 Hệ thống đã hoàn thiện 100\% các chức năng với giao diện Web Single Page Application (SPA) responsive:
 \begin{enumerate}[leftmargin=1.2cm]
-    \item \textbf{Giao diện Đăng nhập / Đăng ký:} Xác thực dữ liệu đầu vào và lưu trữ Token an toàn.
-    \item \textbf{Giao diện Quản lý phòng xem:} Tạo phòng mới và truy cập nhanh bằng Mã phòng (Room ID).
-    \item \textbf{Giao diện Phòng xem trực tuyến:} Trình phát video HTML5 / YouTube, Khung danh sách phát bài hát (Queue), Khung trò chuyện nhóm đính kèm Timestamp và Danh sách thành viên online.
+    \item \textbf{Giao diện Đăng nhập / Đăng ký \& Xác thực OTP:} Đăng nhập JWT, đăng ký và lấy lại mật khẩu xác thực qua mã OTP 6 chữ số gửi về Email.
+    \item \textbf{Giao diện Quản lý phòng xem \& Playlist cá nhân:} Tạo phòng mới, quản lý danh sách phòng cá nhân và danh sách phát cá nhân (Personal Playlists).
+    \item \textbf{Giao diện Phòng xem trực tuyến:} Trình phát video HTML5 (hỗ trợ upload/stream HTTP Range 206) / YouTube, Hàng chờ phát bài (Queue), Trò chuyện đính kèm Timestamp, Danh sách thành viên online và bảng điều khiển phân quyền của Host.
+    \item \textbf{Giao diện Quản trị viên (Admin Dashboard):} Giám sát phần cứng máy chủ (RAM, CPU, Uptime), trạng thái CSDL (PostgreSQL, Redis) và quản lý các phòng xem active.
 \end{enumerate}
 
 \subsection{Kết quả kiểm thử và Phân tích lỗi kỹ thuật}
@@ -375,17 +402,22 @@ Hệ thống đã hoàn thiện 100\% các chức năng với giao diện Web Si
 \centering
 \caption{Bảng tổng hợp kết quả kiểm thử các chức năng chính}
 \label{tab:test_cases_summary}
-\begin{tabular}{|c|p{4.5cm}|p{5.5cm}|c|}
+\begin{tabular}{|c|p{4.8cm}|p{5.2cm}|c|}
 \hline
 \textbf{STT} & \textbf{Kịch bản kiểm thử (Test Case)} & \textbf{Kết quả kỳ vọng} & \textbf{Trạng thái} \\ \hline
 1 & Đăng ký \& Đăng nhập tài khoản & Tạo chuỗi Token JWT, lưu vào LocalStorage & PASSED \\ \hline
-2 & Tạo phòng mới \& Nhận Room ID & Khởi tạo bản ghi phòng mới trong PostgreSQL & PASSED \\ \hline
-3 & Kết nối WebSocket Handshake & Xác thực Token JWT, tự động join Room & PASSED \\ \hline
-4 & Thêm video YouTube vào Queue & Đồng bộ danh sách phát tới tất cả thành viên & PASSED \\ \hline
-5 & Đồng bộ sự kiện Play / Pause / Seek & Các Client đồng bộ trạng thái phát trong $<300ms$ & PASSED \\ \hline
-6 & Chat tin nhắn đính kèm Timestamp & Tin nhắn hiển thị link thời gian nhảy video & PASSED \\ \hline
+2 & Gửi mã OTP xác thực Email & Mã OTP 6 chữ số gửi qua SMTP, lưu tạm 5m ở Redis & PASSED \\ \hline
+3 & Tạo phòng mới \& Nhận Room ID & Khởi tạo bản ghi phòng mới trong PostgreSQL & PASSED \\ \hline
+4 & Kết nối WebSocket Handshake & Xác thực Token JWT, tự động join Room & PASSED \\ \hline
+5 & Thêm video YouTube / Upload local & Đồng bộ danh sách phát \& Stream HTTP Range (206) & PASSED \\ \hline
+6 & Đồng bộ sự kiện Play / Pause / Seek & Các Client đồng bộ trạng thái phát trong $<300ms$ & PASSED \\ \hline
+7 & Chat tin nhắn đính kèm Timestamp & Tin nhắn hiển thị link thời gian nhảy video & PASSED \\ \hline
+8 & Phân quyền Host \& Đổi quyền thành viên & Cập nhật tức thì quyền Read-Only / Write qua Socket & PASSED \\ \hline
+9 & Quản lý Danh sách phát cá nhân & Lưu Playlist trong PostgreSQL, cho phép Reorder & PASSED \\ \hline
+10 & Giám sát hệ thống Admin Dashboard & Hiển thị chỉ số RAM/CPU \& Quản lý phòng Active & PASSED \\ \hline
 \end{tabular}
 \end{table}
+
 
 \subsubsection{Phân tích lỗi kỹ thuật và Cách khắc phục}
 \begin{enumerate}[leftmargin=1.2cm]

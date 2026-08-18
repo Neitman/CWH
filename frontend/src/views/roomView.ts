@@ -1,5 +1,5 @@
 import { io, Socket } from 'socket.io-client';
-import { refreshAccessToken, fetchWithAuth, currentUser } from '../api';
+import { refreshAccessToken, fetchWithAuth, currentUser, getUserPlaylists, getPlaylistDetailsAPI, addSongToPlaylistAPI } from '../api';
 import { switchPage } from '../router';
 
 let socket: Socket;
@@ -9,6 +9,9 @@ let isYtApiReady = false;
 let currentPlayingSong: any = null;
 let isLooping = false;
 let isPlayingLocally = false;
+let currentVolume = 100;
+let isMuted = false;
+let showToastFn: (msg: string, type: 'info' | 'error' | 'success') => void = () => {};
 
 function extractYouTubeId(urlOrId: string): string | null {
   const input = urlOrId.trim();
@@ -66,7 +69,8 @@ function formatVnTimeString(dateVal: any): string {
   });
 }
 
-export function initRoomView(showToastFn: (msg: string, type: 'info' | 'error' | 'success') => void) {
+export function initRoomView(showToast: (msg: string, type: 'info' | 'error' | 'success') => void) {
+  showToastFn = showToast;
   const leaveRoomBtn = document.getElementById('leave-room-btn');
   const copyRoomLinkBtn = document.getElementById('copy-room-link-btn');
 
@@ -88,10 +92,10 @@ export function initRoomView(showToastFn: (msg: string, type: 'info' | 'error' |
 
   const roomCodeDisplay = document.getElementById('room-code-display');
 
-  const handleCopyRoomLink = () => {
+  const handleCopyRoomId = () => {
     if (!currentRoomId) return;
-    const inviteUrl = `${window.location.origin}/?room=${currentRoomId}`;
-    navigator.clipboard.writeText(inviteUrl).then(() => {
+    navigator.clipboard.writeText(currentRoomId).then(() => {
+      showToastFn(`Copied Room ID: ${currentRoomId}`, 'success');
       if (copyRoomLinkBtn) {
         const originalContent = copyRoomLinkBtn.innerHTML;
         copyRoomLinkBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
@@ -102,8 +106,12 @@ export function initRoomView(showToastFn: (msg: string, type: 'info' | 'error' |
     }).catch(() => {});
   };
 
-  copyRoomLinkBtn?.addEventListener('click', handleCopyRoomLink);
-  roomCodeDisplay?.addEventListener('click', handleCopyRoomLink);
+  copyRoomLinkBtn?.addEventListener('click', handleCopyRoomId);
+  roomCodeDisplay?.addEventListener('click', handleCopyRoomId);
+
+  // Load Saved Playlists in Room UI
+  loadRoomUserPlaylists();
+  document.getElementById('refresh-room-playlists-btn')?.addEventListener('click', loadRoomUserPlaylists);
 
   // Socket event listeners
   socket.on('connect', () => {
@@ -134,8 +142,8 @@ export function initRoomView(showToastFn: (msg: string, type: 'info' | 'error' |
   });
 
   socket.on('auth-error', async (data: { error: string }) => {
-    const errText = data.error.toLowerCase();
-    if (errText.includes('permission denied') || errText.includes('write access') || errText.includes('only the room host')) {
+    const errText = (data.error || '').toLowerCase();
+    if (errText.includes('read only') || errText.includes('permission') || errText.includes('only the room host') || errText.includes('denied') || errText.includes('log in')) {
       showToastFn(data.error, 'error');
     } else {
       const newToken = await refreshAccessToken();
@@ -157,8 +165,17 @@ export function initRoomView(showToastFn: (msg: string, type: 'info' | 'error' |
       usersCountEl.textContent = totalCount.toString();
     }
 
-    const currentName = currentUser ? (currentUser.display_name || currentUser.username) : '';
-    const currentMemberObj = Array.isArray(data.members) ? data.members.find((m: any) => typeof m === 'object' && (m.username === currentName || m.displayName === currentName)) : null;
+    const currentDisplayName = currentUser ? (currentUser.display_name || currentUser.username) : '';
+    const currentUsername = currentUser ? currentUser.username : '';
+
+    const currentMemberObj = Array.isArray(data.members) 
+      ? data.members.find((m: any) => typeof m === 'object' && (
+          (m.username && m.username.toLowerCase() === currentUsername.toLowerCase()) ||
+          (m.displayName && m.displayName.toLowerCase() === currentDisplayName.toLowerCase()) ||
+          (m.username && m.username.toLowerCase() === currentDisplayName.toLowerCase())
+        )) 
+      : null;
+
     const isCurrentHost = currentMemberObj ? currentMemberObj.isHost : false;
 
     if (clearChatBtn) {
@@ -171,7 +188,7 @@ export function initRoomView(showToastFn: (msg: string, type: 'info' | 'error' |
       data.members.forEach((member: any) => {
         const item = document.createElement('div');
         item.className = 'listener-item';
-        item.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 0.35rem 0.5rem; gap: 0.5rem;';
+        item.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 0.4rem 0.6rem; gap: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.04);';
         
         const rawUsername = typeof member === 'string' ? member : (member.username || 'Guest');
         const name = typeof member === 'string' 
@@ -181,17 +198,25 @@ export function initRoomView(showToastFn: (msg: string, type: 'info' | 'error' |
         const memberCanWrite = typeof member === 'object' ? member.canWrite : true;
 
         item.innerHTML = `
-          <div style="display: flex; align-items: center; gap: 0.5rem; overflow: hidden;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; overflow: hidden; flex: 1;">
             <span class="status-dot online"></span>
             <span class="listener-name" style="font-size: 0.85rem; color: #fff; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-              ${name} ${memberIsHost ? '<span class="badge" style="font-size: 0.65rem; padding: 0.1rem 0.4rem; background: rgba(99, 102, 241, 0.3); color: #818cf8; margin-left: 0.25rem;">HOST</span>' : ''}
+              ${name}
             </span>
           </div>
-          ${isCurrentHost && !memberIsHost ? `
-            <button class="btn-toggle-perm" data-username="${rawUsername}" style="font-size: 0.7rem; padding: 0.15rem 0.4rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.15); background: ${memberCanWrite ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}; color: ${memberCanWrite ? '#4ade80' : '#f87171'}; cursor: pointer;">
-              ${memberCanWrite ? 'Can Edit' : 'Read Only'}
-            </button>
-          ` : ''}
+          <div style="display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0;">
+            ${memberIsHost ? `
+              <span class="badge" style="font-size: 0.68rem; padding: 0.15rem 0.45rem; background: rgba(99, 102, 241, 0.25); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.4); font-weight: 600;">HOST</span>
+            ` : (isCurrentHost ? `
+              <button class="btn-toggle-perm" data-username="${rawUsername}" style="font-size: 0.72rem; font-weight: 600; padding: 0.2rem 0.55rem; border-radius: 6px; border: 1px solid ${memberCanWrite ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)'}; background: ${memberCanWrite ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)'}; color: ${memberCanWrite ? '#4ade80' : '#f87171'}; cursor: pointer; transition: all 0.2s ease;" title="Click to toggle permission">
+                ${memberCanWrite ? 'Can Edit' : 'Read Only'}
+              </button>
+            ` : `
+              <span class="badge" style="font-size: 0.68rem; padding: 0.15rem 0.45rem; border-radius: 6px; border: 1px solid ${memberCanWrite ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}; background: ${memberCanWrite ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)'}; color: ${memberCanWrite ? '#4ade80' : '#f87171'};">
+                ${memberCanWrite ? 'Can Edit' : 'Read Only'}
+              </span>
+            `)}
+          </div>
         `;
 
         if (isCurrentHost && !memberIsHost) {
@@ -230,6 +255,8 @@ export function initRoomView(showToastFn: (msg: string, type: 'info' | 'error' |
   socket.on('play', (data: any) => {
     if (data.currentSong) {
       loadVideoInPlayer(data.currentSong, data.playback?.progress || 0, data.playback?.isPlaying ?? true);
+    } else {
+      loadVideoInPlayer(null, 0, false);
     }
   });
 
@@ -323,17 +350,25 @@ export function initRoomView(showToastFn: (msg: string, type: 'info' | 'error' |
   });
 
   // Custom Video File Upload Setup
-  const selectVideoBtn = document.getElementById('select-video-file-btn');
+  const selectVideoBtn = document.getElementById('select-video-file-btn') as HTMLButtonElement;
   const videoFileInput = document.getElementById('video-file-input') as HTMLInputElement;
   const selectedFileName = document.getElementById('selected-file-name');
+  let isUploadingFile = false;
 
   selectVideoBtn?.addEventListener('click', () => {
+    if (isUploadingFile) return;
     videoFileInput?.click();
   });
 
   videoFileInput?.addEventListener('change', async () => {
-    if (!videoFileInput.files || videoFileInput.files.length === 0) return;
+    if (!videoFileInput.files || videoFileInput.files.length === 0 || isUploadingFile) return;
     const file = videoFileInput.files[0];
+    isUploadingFile = true;
+
+    if (selectVideoBtn) {
+      selectVideoBtn.disabled = true;
+      selectVideoBtn.textContent = 'Uploading Video...';
+    }
 
     if (selectedFileName) {
       selectedFileName.textContent = `Uploading: ${file.name}...`;
@@ -370,17 +405,26 @@ export function initRoomView(showToastFn: (msg: string, type: 'info' | 'error' |
       }
     } catch (err: any) {
       showToastFn(err.message || 'Error uploading video file', 'error');
+    } finally {
+      isUploadingFile = false;
+      videoFileInput.value = '';
+      if (selectVideoBtn) {
+        selectVideoBtn.disabled = false;
+        selectVideoBtn.textContent = 'Choose Video File';
+      }
     }
   });
 
   // YouTube Direct Video ID & Search Handlers
   const directVideoInput = document.getElementById('direct-video-input') as HTMLInputElement;
-  const addDirectVideoBtn = document.getElementById('add-direct-video-btn');
+  const addDirectVideoBtn = document.getElementById('add-direct-video-btn') as HTMLButtonElement;
   const searchInput = document.getElementById('search-input') as HTMLInputElement;
   const searchBtn = document.getElementById('search-btn');
   const searchResultsList = document.getElementById('search-results-list');
+  let isAddingDirectVideo = false;
 
   const addDirectVideo = async () => {
+    if (isAddingDirectVideo) return;
     const rawVal = directVideoInput?.value || searchInput?.value || '';
     const videoId = extractYouTubeId(rawVal);
     if (!videoId) {
@@ -393,21 +437,35 @@ export function initRoomView(showToastFn: (msg: string, type: 'info' | 'error' |
       return;
     }
 
-    // Fetch real video title & thumbnail via YouTube oEmbed API
-    const details = await fetchYouTubeVideoDetails(videoId);
+    isAddingDirectVideo = true;
+    if (addDirectVideoBtn) {
+      addDirectVideoBtn.disabled = true;
+      addDirectVideoBtn.textContent = 'Adding...';
+    }
 
-    socket.emit('add-song', {
-      id: `song-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      videoId: videoId,
-      title: details.title,
-      thumbnail: details.thumbnail,
-      channelTitle: details.channelTitle,
-      duration: '3:00',
-      type: 'youtube'
-    });
+    try {
+      const details = await fetchYouTubeVideoDetails(videoId);
+      socket.emit('add-song', {
+        id: `song-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        videoId: videoId,
+        title: details.title,
+        thumbnail: details.thumbnail,
+        channelTitle: details.channelTitle,
+        duration: '3:00',
+        type: 'youtube'
+      });
 
-    if (directVideoInput) directVideoInput.value = '';
-    if (searchInput) searchInput.value = '';
+      if (directVideoInput) directVideoInput.value = '';
+      if (searchInput) searchInput.value = '';
+    } finally {
+      setTimeout(() => {
+        isAddingDirectVideo = false;
+        if (addDirectVideoBtn) {
+          addDirectVideoBtn.disabled = false;
+          addDirectVideoBtn.textContent = '+ Add Video';
+        }
+      }, 1000);
+    }
   };
 
   addDirectVideoBtn?.addEventListener('click', addDirectVideo);
@@ -443,6 +501,107 @@ export function initRoomView(showToastFn: (msg: string, type: 'info' | 'error' |
     }
   });
 
+  // Select Playlist Modal Setup
+  const selectPlaylistModal = document.getElementById('select-playlist-modal');
+  const closeSelectPlaylistModalBtn = document.getElementById('close-select-playlist-modal-btn');
+  const selectPlaylistSongTitle = document.getElementById('select-playlist-song-title');
+  const selectPlaylistList = document.getElementById('select-playlist-list');
+
+  const hideSelectPlaylistModal = () => {
+    if (selectPlaylistModal) {
+      selectPlaylistModal.classList.add('hidden');
+      selectPlaylistModal.setAttribute('style', 'display: none !important;');
+    }
+  };
+
+  closeSelectPlaylistModalBtn?.addEventListener('click', hideSelectPlaylistModal);
+  selectPlaylistModal?.addEventListener('click', (e) => {
+    if (e.target === selectPlaylistModal) hideSelectPlaylistModal();
+  });
+
+  async function openSelectPlaylistModal(video: { id: string; title: string; thumbnail?: string; channelTitle?: string; duration?: number }) {
+    if (!currentUser) {
+      showToastFn('Please log in to save videos to playlists', 'error');
+      return;
+    }
+
+    if (selectPlaylistSongTitle) {
+      selectPlaylistSongTitle.textContent = video.title;
+    }
+
+    if (selectPlaylistList) {
+      selectPlaylistList.innerHTML = '<div class="search-placeholder">Loading your playlists...</div>';
+    }
+
+    if (selectPlaylistModal) {
+      selectPlaylistModal.classList.remove('hidden');
+      selectPlaylistModal.setAttribute('style', 'display: flex !important;');
+    }
+
+    const playlists = await getUserPlaylists();
+
+    if (!selectPlaylistList) return;
+
+    if (!playlists || playlists.length === 0) {
+      selectPlaylistList.innerHTML = `
+        <div class="search-placeholder" style="text-align: center;">
+          <p style="margin-bottom: 0.75rem;">No saved playlists found.</p>
+          <button id="modal-create-playlist-trigger" class="btn btn-primary btn-sm" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">+ Create Playlist</button>
+        </div>
+      `;
+      document.getElementById('modal-create-playlist-trigger')?.addEventListener('click', () => {
+        hideSelectPlaylistModal();
+        const createPlaylistBtn = document.getElementById('create-playlist-btn');
+        createPlaylistBtn?.click();
+      });
+      return;
+    }
+
+    selectPlaylistList.innerHTML = '';
+    playlists.forEach(pl => {
+      const plItem = document.createElement('div');
+      plItem.className = 'user-playlist-item';
+      plItem.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 0.85rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; cursor: pointer;';
+      plItem.innerHTML = `
+        <div class="playlist-info-meta">
+          <div class="playlist-item-title" style="font-weight: 600; color: #fff; font-size: 0.9rem;">${pl.title}</div>
+          <div class="playlist-item-count" style="font-size: 0.75rem; color: var(--color-text-muted);">${pl.song_count || 0} Songs</div>
+        </div>
+        <button class="btn btn-primary btn-sm btn-add-to-this-pl" style="font-size: 0.75rem; padding: 0.3rem 0.65rem; white-space: nowrap;">+ Add Here</button>
+      `;
+
+      plItem.querySelector('.btn-add-to-this-pl')?.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const btn = plItem.querySelector('.btn-add-to-this-pl') as HTMLButtonElement;
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = 'Adding...';
+        }
+
+        const res = await addSongToPlaylistAPI(pl.id, {
+          id: video.id,
+          title: video.title,
+          thumbnail: video.thumbnail,
+          channelTitle: video.channelTitle,
+          duration: video.duration
+        });
+
+        if (res.success) {
+          showToastFn(`Added to playlist "${pl.title}"!`, 'success');
+          hideSelectPlaylistModal();
+        } else {
+          showToastFn(res.error || 'Failed to add song to playlist', 'error');
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = '+ Add Here';
+          }
+        }
+      });
+
+      selectPlaylistList.appendChild(plItem);
+    });
+  }
+
   async function performYouTubeSearch(query: string) {
     if (searchResultsList) {
       searchResultsList.innerHTML = '<div class="search-placeholder">Searching YouTube...</div>';
@@ -459,14 +618,17 @@ export function initRoomView(showToastFn: (msg: string, type: 'info' | 'error' |
           item.className = 'search-result-item';
           item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 0.4rem; border-bottom: 1px solid rgba(255,255,255,0.06); gap: 0.5rem;';
           item.innerHTML = `
-            <div style="display: flex; gap: 0.5rem; align-items: center; overflow: hidden;">
+            <div style="display: flex; gap: 0.5rem; align-items: center; overflow: hidden; flex: 1;">
               <img src="${video.thumbnail}" style="width: 44px; height: 32px; object-fit: cover; border-radius: 4px; flex-shrink: 0;" />
               <div style="overflow: hidden;">
                 <h4 style="font-size: 0.8rem; color: #fff; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${video.title}</h4>
                 <span style="font-size: 0.7rem; color: var(--color-text-muted);">${video.channelTitle || 'YouTube'}</span>
               </div>
             </div>
-            <button class="btn btn-primary btn-sm btn-add-queue" style="font-size: 0.75rem; padding: 0.25rem 0.5rem; flex-shrink: 0;">+ Add</button>
+            <div style="display: flex; gap: 0.35rem; flex-shrink: 0;">
+              <button class="btn btn-primary btn-sm btn-add-queue" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;" title="Add to Room Queue">+ Queue</button>
+              <button class="btn btn-secondary-outline btn-sm btn-add-playlist" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;" title="Add to Personal Playlist">+ Playlist</button>
+            </div>
           `;
 
           item.querySelector('.btn-add-queue')?.addEventListener('click', () => {
@@ -480,6 +642,17 @@ export function initRoomView(showToastFn: (msg: string, type: 'info' | 'error' |
               duration: video.duration || '3:00',
               type: 'youtube'
             });
+            showToastFn(`Added "${video.title}" to room queue`, 'success');
+          });
+
+          item.querySelector('.btn-add-playlist')?.addEventListener('click', () => {
+            openSelectPlaylistModal({
+              id: video.id,
+              title: video.title,
+              thumbnail: video.thumbnail || `https://img.youtube.com/vi/${video.id}/mqdefault.jpg`,
+              channelTitle: video.channelTitle || 'YouTube',
+              duration: 180
+            });
           });
 
           searchResultsList!.appendChild(item);
@@ -490,6 +663,96 @@ export function initRoomView(showToastFn: (msg: string, type: 'info' | 'error' |
     } catch (err) {
       searchResultsList!.innerHTML = '<div class="search-placeholder">Search failed. Paste direct Video ID above!</div>';
     }
+  }
+}
+
+// -------------------------------------------------------------
+// Load User Saved Playlists in Room UI
+// -------------------------------------------------------------
+async function loadRoomUserPlaylists() {
+  const container = document.getElementById('room-user-playlists-list');
+  if (!container) return;
+
+  if (!currentUser) {
+    container.innerHTML = `
+      <div class="search-placeholder" style="text-align: center; font-size: 0.8rem;">
+        Log in to access & import your saved playlists into the room queue.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = '<div class="search-placeholder">Loading your playlists...</div>';
+
+  try {
+    const playlists = await getUserPlaylists();
+    if (!playlists || playlists.length === 0) {
+      container.innerHTML = `
+        <div class="search-placeholder" style="text-align: center; font-size: 0.8rem;">
+          No saved playlists yet. Go to your Profile to create one!
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = '';
+    playlists.forEach(pl => {
+      const plCard = document.createElement('div');
+      plCard.className = 'user-room-playlist-card';
+      plCard.style.cssText = 'background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 0.65rem 0.8rem; display: flex; flex-direction: column; gap: 0.4rem;';
+
+      plCard.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
+          <div style="overflow: hidden; flex: 1;">
+            <div style="font-weight: 600; color: #fff; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${pl.title}</div>
+            <div style="font-size: 0.72rem; color: var(--color-text-muted);">${pl.song_count || 0} Videos</div>
+          </div>
+          <button class="btn btn-primary btn-sm btn-import-all-queue" style="font-size: 0.75rem; padding: 0.25rem 0.6rem; white-space: nowrap; flex-shrink: 0;" title="Add all videos in this playlist into room queue">
+            Add All to Queue
+          </button>
+        </div>
+      `;
+
+      const importBtn = plCard.querySelector('.btn-import-all-queue') as HTMLButtonElement;
+      importBtn?.addEventListener('click', async () => {
+        if (!currentRoomId) {
+          showToastFn('Please enter a room first.', 'error');
+          return;
+        }
+
+        importBtn.disabled = true;
+        importBtn.textContent = 'Importing...';
+
+        try {
+          const res = await getPlaylistDetailsAPI(pl.id);
+          if (res.success && res.items && res.items.length > 0) {
+            const songs = res.items.map((item: any) => ({
+              id: `song-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
+              videoId: item.songId,
+              title: item.title,
+              thumbnail: item.thumbnail || `https://img.youtube.com/vi/${item.songId}/mqdefault.jpg`,
+              channelTitle: item.channelTitle || 'YouTube',
+              duration: item.duration || '3:00',
+              type: 'youtube'
+            }));
+
+            socket.emit('add-songs', songs);
+            showToastFn(`Added ${songs.length} videos from "${pl.title}" to room queue!`, 'success');
+          } else {
+            showToastFn(res.error || 'Playlist is empty. Add videos to playlist first!', 'error');
+          }
+        } catch (err: any) {
+          showToastFn('Failed to import playlist items', 'error');
+        } finally {
+          importBtn.disabled = false;
+          importBtn.textContent = '➕ Add All to Queue';
+        }
+      });
+
+      container.appendChild(plCard);
+    });
+  } catch (err) {
+    container.innerHTML = '<div class="search-placeholder">Failed to load saved playlists.</div>';
   }
 }
 
@@ -535,6 +798,7 @@ function createYtPlayer() {
       events: {
         onReady: () => {
           isYtApiReady = true;
+          applyVolumeState();
           if (currentPlayingSong && currentPlayingSong.type !== 'custom') {
             loadVideoInPlayer(currentPlayingSong, 0, true);
           }
@@ -546,8 +810,11 @@ function createYtPlayer() {
                 ytPlayer.seekTo(0, true);
                 ytPlayer.playVideo();
               }
-            } else if (socket && currentRoomId) {
-              socket.emit('next-song');
+            } else {
+              pauseVideoInPlayer(0);
+              if (socket && currentRoomId) {
+                socket.emit('next-song');
+              }
             }
           }
         }
@@ -577,30 +844,64 @@ function loadVideoInPlayer(song: any, progress = 0, isPlaying = true) {
   if (channelEl) channelEl.textContent = song.channelTitle || (song.type === 'custom' ? 'Local Custom File' : 'YouTube');
 
   if (song.type === 'custom' || (song.videoUrl && !song.videoId)) {
-    // HTML5 Video Player
-    if (youtubeContainer) youtubeContainer.classList.add('hidden');
+    // Stop & pause YouTube Video Player when switching to local video
+    if (ytPlayer) {
+      try {
+        if (typeof ytPlayer.stopVideo === 'function') {
+          ytPlayer.stopVideo();
+        } else if (typeof ytPlayer.pauseVideo === 'function') {
+          ytPlayer.pauseVideo();
+        }
+      } catch (e) {}
+    }
+    if (youtubeContainer) {
+      const iframe = youtubeContainer.querySelector('iframe');
+      if (iframe && iframe.contentWindow) {
+        try {
+          iframe.contentWindow.postMessage('{"event":"command","func":"stopVideo","args":""}', '*');
+          iframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+        } catch (e) {}
+      }
+      youtubeContainer.classList.add('hidden');
+    }
+
+    // HTML5 Video Player Setup
     if (html5Video) {
       html5Video.classList.remove('hidden');
-      html5Video.src = song.videoUrl;
+      if (html5Video.src !== song.videoUrl) {
+        html5Video.src = song.videoUrl;
+      }
       html5Video.currentTime = progress;
+      html5Video.muted = isMuted;
+      html5Video.volume = isMuted ? 0 : currentVolume / 100;
       html5Video.onended = () => {
         if (isLooping) {
           html5Video.currentTime = 0;
           html5Video.play().catch(() => {});
-        } else if (socket && currentRoomId) {
-          socket.emit('next-song');
+        } else {
+          pauseVideoInPlayer(0);
+          if (socket && currentRoomId) {
+            socket.emit('next-song');
+          }
         }
       };
       if (isPlaying) {
-        html5Video.play().catch(() => {});
+        html5Video.play().catch(() => {
+          html5Video.muted = true;
+          html5Video.play().catch(() => {});
+          showToastFn('Click video or Play button to enable audio', 'info');
+        });
       } else {
         html5Video.pause();
       }
     }
   } else {
-    // YouTube Video Player
+    // Stop & clear HTML5 Video Player when switching to YouTube video
     if (html5Video) {
       html5Video.pause();
+      html5Video.currentTime = 0;
+      html5Video.src = '';
+      html5Video.load();
       html5Video.classList.add('hidden');
     }
     if (youtubeContainer) youtubeContainer.classList.remove('hidden');
@@ -612,13 +913,14 @@ function loadVideoInPlayer(song: any, progress = 0, isPlaying = true) {
           videoId: videoId,
           startSeconds: progress
         });
+        applyVolumeState();
         if (!isPlaying) {
           ytPlayer.pauseVideo();
         }
       } else {
         // Fallback IFrame if YT API is loading
         const startSec = Math.floor(progress || 0);
-        const iframeHtml = `<iframe width="100%" height="100%" src="https://www.youtube.com/embed/${videoId}?autoplay=${isPlaying ? 1 : 0}&start=${startSec}&controls=0&disablekb=1&fs=0&iv_load_policy=3&modestbranding=1&enablejsapi=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="position: absolute; top:0; left:0; width:100%; height:100%;"></iframe>`;
+        const iframeHtml = `<iframe width="100%" height="100%" src="https://www.youtube.com/embed/${videoId}?autoplay=${isPlaying ? 1 : 0}&start=${startSec}&controls=0&disablekb=1&fs=0&iv_load_policy=3&modestbranding=1&enablejsapi=1&showinfo=0" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none;"></iframe>`;
         if (youtubeContainer) youtubeContainer.innerHTML = iframeHtml;
       }
     }
@@ -664,10 +966,10 @@ function startPlayerProgressLoop() {
       }
     }
 
-    // Periodically sync playback progress with Redis every 10 seconds ONLY if currently playing
-    // Use module-level isPlayingLocally instead of checking DOM icon (more reliable)
+    // Periodically sync playback progress with Redis every 10 seconds ONLY if currently playing and within valid duration
     const now = Date.now();
-    if (isPlayingLocally && now - lastPlaybackSyncTime > 10000 && currentTime > 0 && socket && currentRoomId && !isScrubbingProgressBar) {
+    const isNearEnd = duration > 0 && currentTime >= (duration - 1);
+    if (isPlayingLocally && !isNearEnd && now - lastPlaybackSyncTime > 10000 && currentTime > 0 && socket && currentRoomId && !isScrubbingProgressBar) {
       lastPlaybackSyncTime = now;
       socket.emit('set-playback', {
         isPlaying: true,
@@ -703,19 +1005,79 @@ function startPlayerProgressLoop() {
   }, 250);
 }
 
+function applyVolumeState() {
+  const volumeIcon = document.getElementById('volume-icon');
+  const muteIcon = document.getElementById('mute-icon');
+  const volumeBar = document.getElementById('volume-bar') as HTMLInputElement;
+
+  if (isMuted || currentVolume === 0) {
+    volumeIcon?.classList.add('hidden');
+    muteIcon?.classList.remove('hidden');
+    if (volumeBar) volumeBar.value = '0';
+  } else {
+    volumeIcon?.classList.remove('hidden');
+    muteIcon?.classList.add('hidden');
+    if (volumeBar) volumeBar.value = currentVolume.toString();
+  }
+
+  // HTML5 Video Player
+  const html5Video = document.getElementById('html5-video-player') as HTMLVideoElement;
+  if (html5Video) {
+    html5Video.muted = isMuted;
+    html5Video.volume = isMuted ? 0 : currentVolume / 100;
+  }
+
+  // YouTube Player
+  if (ytPlayer && isYtApiReady) {
+    try {
+      if (typeof ytPlayer.unMute === 'function' && typeof ytPlayer.setVolume === 'function') {
+        if (isMuted || currentVolume === 0) {
+          ytPlayer.mute();
+        } else {
+          ytPlayer.unMute();
+          ytPlayer.setVolume(currentVolume);
+        }
+      }
+    } catch (e) {}
+  }
+}
+
 function playVideoInPlayer() {
+  applyVolumeState();
   const html5Video = document.getElementById('html5-video-player') as HTMLVideoElement;
   if (currentPlayingSong?.type === 'custom') {
+    // Ensure YouTube player is completely paused/stopped
+    if (ytPlayer && typeof ytPlayer.stopVideo === 'function') {
+      try { ytPlayer.stopVideo(); } catch (e) {}
+    } else if (ytPlayer && typeof ytPlayer.pauseVideo === 'function') {
+      try { ytPlayer.pauseVideo(); } catch (e) {}
+    }
     if (html5Video) {
-      html5Video.play().catch(() => {});
+      html5Video.play().catch(() => {
+        html5Video.muted = true;
+        html5Video.play().catch(() => {});
+        showToastFn('Click video or Play button to enable audio', 'info');
+      });
     }
   } else {
+    // Ensure HTML5 video player is paused
+    if (html5Video) {
+      html5Video.pause();
+    }
     if (ytPlayer && typeof ytPlayer.playVideo === 'function') {
+      try {
+        if (!isMuted) {
+          ytPlayer.unMute();
+          ytPlayer.setVolume(currentVolume);
+        }
+      } catch (e) {}
       ytPlayer.playVideo();
     } else {
       const container = document.getElementById('youtube-player');
       const iframe = container?.querySelector('iframe');
       if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+        iframe.contentWindow.postMessage(`{"event":"command","func":"setVolume","args":[${currentVolume}]}`, '*');
         iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
       }
     }
@@ -770,9 +1132,9 @@ function seekVideoInPlayer(progress = 0) {
 }
 
 function enablePlayerControls(enabled: boolean) {
-  const btns = ['play-pause-btn', 'next-btn', 'seek-back-btn', 'seek-forward-btn', 'loop-btn', 'fullscreen-btn'];
+  const btns = ['play-pause-btn', 'next-btn', 'seek-back-btn', 'seek-forward-btn', 'loop-btn', 'fullscreen-btn', 'volume-mute-btn', 'volume-bar'];
   btns.forEach(id => {
-    const el = document.getElementById(id) as HTMLButtonElement;
+    const el = document.getElementById(id) as HTMLInputElement | HTMLButtonElement;
     if (el) el.disabled = !enabled;
   });
 }
@@ -810,10 +1172,32 @@ function setupPlayerControls() {
   const loopBtn = document.getElementById('loop-btn');
   const hudLoopBtn = document.getElementById('hud-loop-btn');
   const fullscreenBtn = document.getElementById('fullscreen-btn');
+  const volumeMuteBtn = document.getElementById('volume-mute-btn');
+  const volumeBar = document.getElementById('volume-bar') as HTMLInputElement;
   const playerContainer = document.getElementById('player-container');
+
+  volumeMuteBtn?.addEventListener('click', () => {
+    isMuted = !isMuted;
+    applyVolumeState();
+  });
+
+  volumeBar?.addEventListener('input', (e) => {
+    const val = parseInt((e.target as HTMLInputElement).value, 10);
+    currentVolume = isNaN(val) ? 100 : val;
+    isMuted = currentVolume === 0;
+    applyVolumeState();
+  });
+
+  let lastPlayPauseClickTime = 0;
+  let lastNextClickTime = 0;
+  let lastSeekClickTime = 0;
 
   const handlePlayPauseToggle = () => {
     if (!currentRoomId) return;
+
+    const now = Date.now();
+    if (now - lastPlayPauseClickTime < 350) return; // 350ms throttle
+    lastPlayPauseClickTime = now;
 
     let currentProgress = 0;
     if (currentPlayingSong?.type === 'custom') {
@@ -849,6 +1233,9 @@ function setupPlayerControls() {
 
   const handleNextSong = () => {
     if (!currentRoomId) return;
+    const now = Date.now();
+    if (now - lastNextClickTime < 1500) return; // 1.5s Cooldown on next song
+    lastNextClickTime = now;
     socket.emit('next-song');
   };
 
@@ -857,6 +1244,10 @@ function setupPlayerControls() {
 
   const handleSeekBack = () => {
     if (!currentRoomId) return;
+    const now = Date.now();
+    if (now - lastSeekClickTime < 300) return; // 300ms throttle
+    lastSeekClickTime = now;
+
     let current = 0;
     if (currentPlayingSong?.type === 'custom') {
       const vid = document.getElementById('html5-video-player') as HTMLVideoElement;
@@ -874,6 +1265,10 @@ function setupPlayerControls() {
 
   const handleSeekForward = () => {
     if (!currentRoomId) return;
+    const now = Date.now();
+    if (now - lastSeekClickTime < 300) return; // 300ms throttle
+    lastSeekClickTime = now;
+
     let current = 0;
     if (currentPlayingSong?.type === 'custom') {
       const vid = document.getElementById('html5-video-player') as HTMLVideoElement;
