@@ -221,18 +221,27 @@ export async function setRoomHost(roomId: string, username: string): Promise<boo
 
 // Check if a user has write permission in the room
 export async function hasWritePermission(roomId: string, username: string): Promise<boolean> {
-  const host = await getRoomHost(roomId);
-  if (!host || username === host) return true;
-  const isRevoked = await redis.sismember(`wp:${roomId}:revoked_permissions`, username);
+  if (!username) return false;
+  const hostInfo = await getRoomHostInfo(roomId);
+  if (hostInfo) {
+    const uLower = username.toLowerCase();
+    if (uLower === hostInfo.username.toLowerCase() || uLower === hostInfo.displayName.toLowerCase()) {
+      return true;
+    }
+  }
+  const isRevoked = await redis.sismember(`wp:${roomId}:revoked_permissions`, username.toLowerCase());
   return isRevoked !== 1;
 }
 
 // Grant write permission to a user
 export async function grantWritePermission(roomId: string, username: string): Promise<void> {
-  await redis.srem(`wp:${roomId}:revoked_permissions`, username);
+  if (!username) return;
+  await redis.srem(`wp:${roomId}:revoked_permissions`, username.toLowerCase());
 }
 
 // Revoke write permission from a user
 export async function revokeWritePermission(roomId: string, username: string): Promise<void> {
-  await redis.sadd(`wp:${roomId}:revoked_permissions`, username);
+  if (!username) return;
+  await redis.sadd(`wp:${roomId}:revoked_permissions`, username.toLowerCase());
 }
+

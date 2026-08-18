@@ -120,6 +120,22 @@
     \end{table}
 \end{frame}
 
+\begin{frame}{2.1a. Kiến trúc Phân tầng Backend (4 Lớp)}
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{|p{2.8cm}|p{3.8cm}|p{5.8cm}|}
+    \hline
+    \textbf{Tầng Kiến trúc} & \textbf{Thành phần mã nguồn} & \textbf{Nhiệm vụ \& Trách nhiệm chính} \\ \hline
+    \textbf{API / Controller} & \texttt{routes/}, \texttt{controllers/}, \texttt{sockets/} & Xử lý request REST API \& WebSocket, kiểm tra JWT middleware \texttt{authenticateToken}. \\ \hline
+    \textbf{Service Layer} & \texttt{src/services/*.ts} & Chứa logic nghiệp vụ: đồng bộ video, bù độ trễ, phân quyền Host, gửi OTP \& dọn dẹp file. \\ \hline
+    \textbf{Repository Layer} & \texttt{src/db.ts} (SQL Queries) & Thao tác CRUD trực tiếp với CSDL PostgreSQL qua thư viện \texttt{pg} Pool. \\ \hline
+    \textbf{Database \& Cache} & PostgreSQL \& Redis & PostgreSQL lưu bền vững tài khoản, phòng, chat; Redis đệm trạng thái $<1ms$, OTP, Refresh Token. \\ \hline
+    \end{tabular}
+    \caption{Ánh xạ 4 tầng kiến trúc phân lập của máy chủ Backend}
+    \end{table}
+\end{frame}
+
 \begin{frame}{2.1b. Sơ đồ thực thể liên kết (ERD) Cơ sở dữ liệu}
     \centering
     \resizebox{0.82\linewidth}{!}{%
@@ -262,9 +278,10 @@
         \begin{column}{0.48\textwidth}
             \begin{block}{Phân quyền Chủ phòng (Host Controls)}
                 \begin{itemize}
-                    \item Tự động xác định Host phòng từ CSDL PostgreSQL \& Redis.
-                    \item Host có quyền gán/rút quyền tương tác của thành viên (\texttt{toggle-permission}: Read-Only / Write).
-                    \item Host có quyền xóa lịch sử chat phòng (\texttt{clear-discussion}) và tua sang bài tiếp theo (\texttt{next-song}).
+                    \item Tự động nhận diện Host từ CSDL PostgreSQL \& bộ đệm Redis (\texttt{wp:<roomId>:host}).
+                    \item Host gán/rút quyền tương tác thành viên (\texttt{toggle-permission}: Read-Only / Write).
+                    \item Danh sách tước quyền lưu ở Redis set (\texttt{wp:<roomId>:revoked\_permissions}), kiểm tra tức thì qua \texttt{room-members-updated}.
+                    \item Xóa lịch sử chat (\texttt{clear-discussion}) \& tua bài tiếp (\texttt{next-song}).
                 \end{itemize}
             \end{block}
         \end{column}
@@ -400,7 +417,7 @@
     \vspace{0.3cm}
     \begin{block}{Hướng phát triển trong tương lai}
         \begin{itemize}
-            \item Áp dụng **Redis Adapter** cho Socket.IO phục vụ mở rộng hệ thống theo chiều ngang (Horizontal Scaling).
+            \item Áp dụng \textbf{Redis Adapter} cho Socket.IO phục vụ mở rộng hệ thống theo chiều ngang (Horizontal Scaling).
             \item Tích hợp tính năng biểu tượng cảm xúc thời gian thực (Real-time Emojis) và Chia sẻ màn hình (Screen Sharing) giữa các thành viên.
         \end{itemize}
     \end{block}

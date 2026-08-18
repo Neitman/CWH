@@ -10,8 +10,20 @@ export const registerStudyHandlers = (io: Server, socket: Socket, roomId: string
   const emitRoomMembers = async () => {
     try {
       const sockets = await io.in(roomId).fetchSockets();
-      const hostInfo = await playlistService.getRoomHostInfo(roomId);
+      let hostInfo = await playlistService.getRoomHostInfo(roomId);
       
+      // Fallback: If no host exists yet, set the first authenticated socket as Host in Redis
+      if (!hostInfo && sockets.length > 0) {
+        for (const s of sockets) {
+          const firstUser = s.data.rawUsername || s.data.username;
+          if (firstUser && !firstUser.startsWith('Guest ') && !firstUser.startsWith('User_')) {
+            await playlistService.setRoomHost(roomId, firstUser);
+            hostInfo = await playlistService.getRoomHostInfo(roomId);
+            break;
+          }
+        }
+      }
+
       const rawMembersMap = new Map<string, { username: string; displayName: string; isHost: boolean; canWrite: boolean }>();
 
       for (const s of sockets) {
@@ -22,10 +34,8 @@ export const registerStudyHandlers = (io: Server, socket: Socket, roomId: string
           ? (rawUsername.toLowerCase() === hostInfo.username.toLowerCase() || displayName.toLowerCase() === hostInfo.displayName.toLowerCase())
           : false;
         
-        let canWrite = true;
-        if (s.data.canWrite !== undefined) {
-          canWrite = s.data.canWrite;
-        }
+        // Dynamically query Redis to check if this user has write permission
+        const canWrite = await playlistService.hasWritePermission(roomId, rawUsername);
 
         rawMembersMap.set(rawUsername.toLowerCase(), {
           username: rawUsername,
@@ -101,7 +111,8 @@ export const registerStudyHandlers = (io: Server, socket: Socket, roomId: string
       return;
     }
 
-    const canWrite = await playlistService.hasWritePermission(roomId, socket.data.username);
+    const userIdentifier = socket.data.rawUsername || socket.data.username;
+    const canWrite = await playlistService.hasWritePermission(roomId, userIdentifier);
     if (!canWrite) {
       socket.emit('auth-error', { error: 'You have Read Only permission in this room.' });
       return;
@@ -125,9 +136,10 @@ export const registerStudyHandlers = (io: Server, socket: Socket, roomId: string
   socket.on('clear-discussion', async () => {
     if (!socket.data.username) return;
 
+    const userIdentifier = socket.data.rawUsername || socket.data.username;
     const hostInfo = await playlistService.getRoomHostInfo(roomId);
     const isHost = hostInfo 
-      ? (socket.data.username.toLowerCase() === hostInfo.username.toLowerCase() || socket.data.username.toLowerCase() === hostInfo.displayName.toLowerCase())
+      ? (userIdentifier.toLowerCase() === hostInfo.username.toLowerCase() || userIdentifier.toLowerCase() === hostInfo.displayName.toLowerCase())
       : false;
 
     if (!isHost) {
@@ -150,7 +162,8 @@ export const registerStudyHandlers = (io: Server, socket: Socket, roomId: string
       return;
     }
 
-    const canWrite = await playlistService.hasWritePermission(roomId, socket.data.username);
+    const userIdentifier = socket.data.rawUsername || socket.data.username;
+    const canWrite = await playlistService.hasWritePermission(roomId, userIdentifier);
     if (!canWrite) {
       socket.emit('auth-error', { error: 'You have Read Only permission in this room.' });
       return;
@@ -182,7 +195,8 @@ export const registerStudyHandlers = (io: Server, socket: Socket, roomId: string
       return;
     }
 
-    const canWrite = await playlistService.hasWritePermission(roomId, socket.data.username);
+    const userIdentifier = socket.data.rawUsername || socket.data.username;
+    const canWrite = await playlistService.hasWritePermission(roomId, userIdentifier);
     if (!canWrite) {
       socket.emit('auth-error', { error: 'You have Read Only permission in this room.' });
       return;
@@ -216,7 +230,8 @@ export const registerStudyHandlers = (io: Server, socket: Socket, roomId: string
       return;
     }
 
-    const canWrite = await playlistService.hasWritePermission(roomId, socket.data.username);
+    const userIdentifier = socket.data.rawUsername || socket.data.username;
+    const canWrite = await playlistService.hasWritePermission(roomId, userIdentifier);
     if (!canWrite) {
       socket.emit('auth-error', { error: 'You have Read Only permission in this room.' });
       return;
@@ -237,7 +252,8 @@ export const registerStudyHandlers = (io: Server, socket: Socket, roomId: string
       return;
     }
 
-    const canWrite = await playlistService.hasWritePermission(roomId, socket.data.username);
+    const userIdentifier = socket.data.rawUsername || socket.data.username;
+    const canWrite = await playlistService.hasWritePermission(roomId, userIdentifier);
     if (!canWrite) {
       socket.emit('auth-error', { error: 'You have Read Only permission in this room.' });
       return;
@@ -264,7 +280,8 @@ export const registerStudyHandlers = (io: Server, socket: Socket, roomId: string
       return;
     }
 
-    const canWrite = await playlistService.hasWritePermission(roomId, socket.data.username);
+    const userIdentifier = socket.data.rawUsername || socket.data.username;
+    const canWrite = await playlistService.hasWritePermission(roomId, userIdentifier);
     if (!canWrite) {
       socket.emit('auth-error', { error: 'You have Read Only permission in this room.' });
       return;
@@ -276,9 +293,10 @@ export const registerStudyHandlers = (io: Server, socket: Socket, roomId: string
   socket.on('toggle-permission', async (data: { targetUsername: string, canWrite: boolean }) => {
     if (!socket.data.username) return;
     try {
+      const userIdentifier = socket.data.rawUsername || socket.data.username;
       const hostInfo = await playlistService.getRoomHostInfo(roomId);
       const isHost = hostInfo 
-        ? (socket.data.username.toLowerCase() === hostInfo.username.toLowerCase() || socket.data.username.toLowerCase() === hostInfo.displayName.toLowerCase())
+        ? (userIdentifier.toLowerCase() === hostInfo.username.toLowerCase() || userIdentifier.toLowerCase() === hostInfo.displayName.toLowerCase())
         : false;
 
       if (!isHost) {

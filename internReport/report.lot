@@ -1,4 +1,10 @@
 \babel@toc {vietnamese}{}\relax 
-\contentsline {table}{\numberline {1}{\ignorespaces Cấu trúc các bảng cơ sở dữ liệu PostgreSQL của hệ thống}}{9}{table.caption.6}%
-\contentsline {table}{\numberline {2}{\ignorespaces Bảng tổng hợp kết quả kiểm thử các chức năng chính}}{15}{table.caption.9}%
-\contentsline {table}{\numberline {3}{\ignorespaces Đánh giá độ trễ đồng bộ video thời gian thực trong các kịch bản mạng}}{15}{table.caption.10}%
+\contentsline {table}{\numberline {1}{\ignorespaces So sánh giữa giao thức WebSocket, HTTP Long-Polling và SSE}}{7}{table.caption.6}%
+\contentsline {table}{\numberline {2}{\ignorespaces Các thành phần chính theo kiến trúc phân tầng của hệ thống Watch Party}}{9}{table.caption.7}%
+\contentsline {table}{\numberline {3}{\ignorespaces Cấu trúc các bảng dữ liệu chính trong PostgreSQL}}{10}{table.caption.8}%
+\contentsline {table}{\numberline {4}{\ignorespaces Cấu trúc các khóa bộ đệm (Keys) lưu trữ trên Redis}}{10}{table.caption.9}%
+\contentsline {table}{\numberline {5}{\ignorespaces Các khó khăn kỹ thuật và giải pháp trong Phân hệ Xác thực}}{12}{table.caption.12}%
+\contentsline {table}{\numberline {6}{\ignorespaces Các khó khăn kỹ thuật và giải pháp trong Phân hệ Đồng bộ Video}}{13}{table.caption.13}%
+\contentsline {table}{\numberline {7}{\ignorespaces Các khó khăn kỹ thuật và giải pháp trong Phân hệ Video Streaming}}{13}{table.caption.14}%
+\contentsline {table}{\numberline {8}{\ignorespaces Bảng tổng hợp kết quả kiểm thử các chức năng chính của hệ thống}}{16}{table.caption.15}%
+\contentsline {table}{\numberline {9}{\ignorespaces Đánh giá độ trễ đồng bộ video thời gian thực trong các kịch bản mạng}}{17}{table.caption.16}%

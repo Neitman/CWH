@@ -17,6 +17,7 @@
 \usepackage{caption}
 \usepackage{setspace}
 \usepackage{longtable}
+\usepackage{float}
 \usepackage{tikz}
 \usetikzlibrary{shapes.geometric, arrows, positioning, calc}
 \onehalfspacing
@@ -78,10 +79,11 @@
 \section*{LỜI CẢM ƠN}
 \addcontentsline{toc}{section}{LỜI CẢM ƠN}
 
-Lời đầu tiên, em xin gửi lời cảm ơn chân thành và sâu sắc nhất tới toàn thể các thầy cô giáo trong Khoa Toán - Cơ - Tin học, Trường Đại học Khoa học Tự nhiên – Đại học Quốc gia Hà Nội đã tận tình giảng dạy, truyền đạt những kiến thức chuyên môn vững chắc và tư duy logic quý báu cho em trong suốt quá trình học tập tại trường.
+Lời đầu tiên, em xin gửi lời cảm ơn chân thành và sâu sắc nhất tới toàn thể các thầy cô giáo trong Khoa Toán - Cơ - Tin học, Trường Đại học Khoa học Tự nhiên – Đại học Quốc gia Hà Nội đã tận tình giảng dạy, truyền đạt những kiến thức chuyên môn vững chắc và tư duy logic quý báu cho em trong suốt quá trình học tập và rèn luyện tại nhà trường.
 
+Em xin chân thành cảm ơn các anh chị hướng dẫn tại đơn vị thực tập đã nhiệt tình tạo điều kiện, định hướng công nghệ và chia sẻ kinh nghiệm làm việc thực tế trong suốt đợt thực tập vừa qua. Những góp ý chuyên môn quý báu của các anh chị đã giúp em củng cố tư duy thiết kế hệ thống thời gian thực, quản lý cơ sở dữ liệu và tối ưu hóa hiệu năng ứng dụng Web.
 
-Dù đã cố gắng hoàn thiện báo cáo và ứng dụng một cách chỉn chu, bài báo cáo không tránh khỏi những hạn chế nhất định. Em rất mong nhận được sự đóng góp ý kiến từ phía thầy cô để tiếp tục phát triển sản phẩm tốt hơn.
+Dù đã cố gắng hoàn thiện báo cáo và ứng dụng một cách chỉn chu, bài báo cáo không tránh khỏi những hạn chế nhất định. Em rất mong nhận được sự đóng góp ý kiến từ phía quý thầy cô để tiếp tục hoàn thiện và phát triển sản phẩm tốt hơn.
 
 Em xin chân thành cảm ơn!
 
@@ -104,13 +106,18 @@ Em xin chân thành cảm ơn!
 \endhead
 \textbf{API} & Application Programming Interface & Giao diện lập trình ứng dụng \\ \hline
 \textbf{CORS} & Cross-Origin Resource Sharing & Chia sẻ tài nguyên khác nguồn \\ \hline
+\textbf{CRUD} & Create, Read, Update, Delete & Các thao tác dữ liệu cơ bản \\ \hline
 \textbf{HTTP / HTTPS} & Hypertext Transfer Protocol (Secure) & Giao thức truyền tải siêu văn bản (Bảo mật) \\ \hline
 \textbf{JSON} & JavaScript Object Notation & Định dạng trao đổi dữ liệu JSON \\ \hline
 \textbf{JWT} & JSON Web Token & Mã thông báo xác thực chuỗi mã hóa \\ \hline
+\textbf{OTP} & One-Time Password & Mật khẩu sử dụng một lần \\ \hline
+\textbf{RDBMS} & Relational Database Management System & Hệ quản trị cơ sở dữ liệu quan hệ \\ \hline
 \textbf{REST} & Representational State Transfer & Kiểu kiến trúc truyền tải trạng thái đại diện \\ \hline
 \textbf{SPA} & Single Page Application & Ứng dụng trang đơn \\ \hline
+\textbf{SSE} & Server-Sent Events & Sự kiện gửi từ phía máy chủ \\ \hline
+\textbf{TTL} & Time To Live & Thời gian sống của dữ liệu bộ đệm \\ \hline
+\textbf{URI / URL} & Uniform Resource Identifier / Locator & Định danh / Đường dẫn tài nguyên chuẩn \\ \hline
 \textbf{WebSocket} & WebSocket Protocol & Giao thức truyền thông 2 chiều qua TCP \\ \hline
-\textbf{RDBMS} & Relational Database Management System & Hệ quản trị cơ sở dữ liệu quan hệ \\ \hline
 \end{longtable}
 \setcounter{table}{0}
 
@@ -134,44 +141,62 @@ Em xin chân thành cảm ơn!
 
 \subsection{Phát biểu bài toán và công việc được giao}
 
-Nhu cầu xem video cùng nhau giữa những người dùng ở các vị trí địa lý khác nhau (Co-watching / Xem video nhóm) ngày càng phổ biến. Tuy nhiên, các nền tảng video hiện tại chủ yếu phục vụ cá nhân hóa theo từng phiên đơn lẻ. Việc đồng bộ phát video thủ công (đếm ngược 3-2-1 để bấm Play) gặp hạn chế lớn về sai lệch độ trễ mạng ($2s - 10s$) và làm mất tính tương tác thời gian thực khi có người tạm dừng video để thảo luận.
+Trong bối cảnh bùng nổ của các nền tảng giải trí số và mạng xã hội hiện nay, nhu cầu thưởng thức các nội dung truyền thông đa phương tiện nhóm (Co-watching / Watch Party) giữa những người dùng ở các vị trí địa lý khác nhau ngày càng trở nên phổ biến. Tuy nhiên, các nền tảng chia sẻ video lớn hiện tại (như YouTube, Vimeo) chủ yếu thiết kế giao diện và luồng truyền dữ liệu phục vụ cho từng phiên trải nghiệm cá nhân đơn lẻ. 
+
+Việc đồng bộ hóa thủ công các thao tác phát video (ví dụ: đếm ngược 3--2--1 qua cuộc gọi thoại để cùng bấm \textit{Play} hoặc \textit{Pause}) gặp phải hạn chế rất lớn do sự lệch pha độ trễ mạng ($2s - 10s$), sự biến động của gói tin mạng (jitter) và sự khác biệt về tốc độ giải mã phần cứng giữa các thiết bị. Điều này gây mất tính tương tác thời gian thực, khiến trải nghiệm xem video nhóm bị gián đoạn mỗi khi có thành viên tạm dừng video để thảo luận hoặc tua đến phân đoạn yêu thích.
 
 \textbf{Công việc được giao trong đợt thực tập:}
-Nhiệm vụ trọng tâm là nghiên cứu và xây dựng ứng dụng Web thời gian thực cho phép đồng bộ hóa trạng thái phát video nhóm với độ trễ siêu thấp ($<1s$). Các mục tiêu cụ thể gồm:
+Nhiệm vụ trọng tâm của đợt thực tập là nghiên cứu sâu về giao thức truyền thông hai chiều thời gian thực WebSocket, kết hợp kiến trúc máy chủ xử lý sự kiện bất đồng bộ để xây dựng nền tảng Web Application \textbf{"Watch Party"} cho phép đồng bộ hóa trạng thái phát video nhóm với độ trễ siêu thấp ($<300ms$). Các mục tiêu công việc cụ thể bao gồm:
 \begin{enumerate}[leftmargin=1.2cm]
-    \item Đăng ký, đăng nhập tài khoản an toàn với mã hóa mật khẩu và token xác thực.
-    \item Khởi tạo phòng xem và tham gia phòng thông qua Mã phòng (Room ID) duy nhất.
-    \item Đồng bộ tức thời các thao tác: Phát (Play), Tạm dừng (Pause), Tua (Seek), Chuyển bài trong danh sách phát (Queue).
-    \item Tích hợp hệ thống trò chuyện (Chat) gắn mốc thời gian xem video (Timestamp).
+    \item \textbf{Xây dựng hệ thống xác thực người dùng bảo mật:} Hỗ trợ đăng ký, đăng nhập tài khoản bằng JWT (JSON Web Token), mã hóa mật khẩu một chiều với thuật toán Bcrypt và cơ chế xác thực OTP 2 bước qua Email.
+    \item \textbf{Quản lý phòng xem nhóm thời gian thực:} Cho phép người dùng khởi tạo phòng xem riêng tư/công khai, tham gia phòng thông qua Mã phòng (\texttt{Room ID}) duy nhất và quản lý danh sách thành viên đang trực tuyến.
+    \item \textbf{Đồng bộ hóa tức thời trạng thái phát video:} Đồng bộ hóa chính xác các tác vụ điều khiển bao gồm Phát (Play), Tạm dừng (Pause), Tua (Seek) và Chuyển bài trong hàng chờ phát (Queue) tới toàn bộ các Client trong phòng.
+    \item \textbf{Tích hợp module trò chuyện nhóm đính kèm mốc thời gian (Timestamp):} Cho phép thành viên gửi tin nhắn thảo luận có gắn vị trí thời gian của video, cho phép bấm trực tiếp vào tin nhắn để nhảy đến phân đoạn video tương ứng.
+    \item \textbf{Hỗ trợ tải lên và phát trực tuyến video tùy chỉnh (Custom Video Streaming):} Phát phân đoạn dữ liệu nhị phân (HTTP Range Requests 206) cho các video cá nhân dung lượng lớn, kết hợp cơ chế dọn dẹp bộ nhớ tự động.
 \end{enumerate}
+
 
 \subsection{Khảo sát công nghệ, công cụ và lý do lựa chọn}
 
-\subsubsection{Giới thiệu công nghệ WebSocket}
-WebSocket là một giao thức truyền thông mạng hoạt động trên nền TCP, được chuẩn hóa bởi IETF trong RFC 6455, cho phép thiết lập một kênh truyền thông \textbf{song công toàn phần (full-duplex)} giữa Client và Server trên một kết nối duy nhất. Khác với mô hình HTTP truyền thống vốn chỉ cho phép Client chủ động gửi yêu cầu và Server phản hồi (request-response), WebSocket duy trì kết nối mở liên tục, cho phép cả hai phía chủ động gửi dữ liệu tới nhau bất kỳ lúc nào mà không cần thiết lập lại kết nối.
+\subsubsection{Công nghệ WebSocket và thư viện Socket.IO}
+WebSocket là giao thức truyền thông chuẩn hóa bởi IETF trong RFC 6455, cho phép thiết lập kênh truyền thông \textbf{song công toàn phần (full-duplex)} trên một kết nối TCP duy nhất giữa Client và Server. Khác với kiến trúc HTTP truyền thống (Client gửi yêu cầu, Server phản hồi), WebSocket duy trì kết nối mở liên tục, giúp Server chủ động đẩy (push) dữ liệu về Client ngay khi có sự kiện phát sinh mà không cần qua cơ chế hỏi vòng (polling).
 
-Quá trình thiết lập kết nối WebSocket bắt đầu bằng một \textit{HTTP Handshake} (yêu cầu nâng cấp giao thức thông qua header \texttt{Upgrade: websocket}), sau đó kết nối được chuyển đổi hoàn toàn sang giao thức WebSocket. Từ thời điểm này, dữ liệu được truyền qua các \textit{frame} nhị phân có kích thước tiêu đề rất nhỏ (chỉ $2B-10B$), giúp giảm đáng kể độ trễ và chi phí băng thông so với việc gửi lặp lại các HTTP Header đầy đủ trong mỗi request.
+\begin{table}[H]
+\centering
+\small
+\caption{So sánh giữa giao thức WebSocket, HTTP Long-Polling và SSE}
+\label{tab:protocol_comparison}
+\begin{tabular}{|p{3.2cm}|p{3.8cm}|p{3.8cm}|p{3.8cm}|}
+\hline
+\textbf{Tiêu chí} & \textbf{WebSocket} & \textbf{HTTP Long-Polling} & \textbf{Server-Sent Events (SSE)} \\ \hline
+\textbf{Chiều truyền thông} & Song công (Full-duplex) & 1 chiều theo lượt Request & 1 chiều (Server $\rightarrow$ Client) \\ \hline
+\textbf{Độ trễ (Latency)} & Rất thấp ($<50ms$) & Cao (phụ thuộc HTTP RTT) & Thấp ($<100ms$) \\ \hline
+\textbf{Chi phí Header} & Rất nhỏ ($2B - 10B$) & Rất lớn ($400B - 800B$/req) & Trung bình (HTTP Header) \\ \hline
+\textbf{Tính phù hợp đồng bộ} & Tối ưu cho Video Sync \& Chat & Kém (tốn tài nguyên) & Chỉ phù hợp nhận sự kiện 1 chiều \\ \hline
+\end{tabular}
+\end{table}
 
-Trong đề tài này, thư viện \textbf{Socket.IO} được lựa chọn làm lớp trừu tượng hóa trên nền WebSocket, do cung cấp sẵn các tính năng thiết yếu cho ứng dụng thời gian thực:
+Trong hệ thống Watch Party, thư viện \textbf{Socket.IO} được lựa chọn làm lớp trừu tượng hóa trên nền WebSocket do tích hợp sẵn các tính năng cao cấp:
 \begin{itemize}[leftmargin=1.2cm]
-    \item \textbf{Cơ chế Room:} Cho phép nhóm các kết nối (socket) theo từng phòng xem, giúp việc phát sự kiện (broadcast) chỉ giới hạn đúng phạm vi người dùng liên quan.
-    \item \textbf{Tự động kết nối lại (Auto-reconnect):} Khi mạng gián đoạn tạm thời, client tự động thiết lập lại kết nối mà không cần người dùng thao tác thủ công.
-    \item \textbf{Cơ chế dự phòng (Fallback):} Tự động chuyển sang HTTP long-polling trong trường hợp trình duyệt hoặc mạng không hỗ trợ WebSocket, đảm bảo tính tương thích rộng rãi.
+    \item \textbf{Cơ chế Room \& Namespace:} Cho phép cô lập các kết nối socket theo từng phòng xem (\texttt{socket.join(roomId)}), giúp việc phát tin nhắn (broadcast) đạt hiệu năng cao và đúng đối tượng.
+    \item \textbf{Tự động kết nối lại (Auto-reconnect):} Tự động thử lại kết nối khi mạng bị ngắt quãng tạm thời mà không làm gián đoạn trạng thái ứng dụng.
+    \item \textbf{Cơ chế dự phòng (HTTP Long-Polling Fallback):} Đảm bảo ứng dụng vẫn hoạt động ngay cả trong môi trường mạng bị chặn kết nối WebSocket thuần.
 \end{itemize}
 
-Nhờ các đặc tính trên, WebSocket là nền tảng phù hợp để xây dựng module đồng bộ hóa trạng thái phát video thời gian thực với độ trễ siêu thấp ($<300ms$), đáp ứng đúng mục tiêu đề tài đặt ra.
 
-\subsubsection{Giới thiệu công nghệ xác thực: JWT và Bcrypt}
-Hệ thống xác thực người dùng được xây dựng dựa trên hai công nghệ chính: \textbf{JWT (JSON Web Token)} cho việc cấp phát và xác minh danh tính, và \textbf{Bcrypt} cho việc băm mật khẩu.
-
-JWT là một chuẩn mở (RFC 7519) cho phép tạo ra chuỗi mã thông báo mang thông tin xác thực đã được ký số bằng thuật toán HMAC-SHA256. Do bản chất \textit{stateless} (không lưu trạng thái phiên tại Server), JWT rất phù hợp với kiến trúc ứng dụng thời gian thực: token được đính kèm dễ dàng trong REST Header (\texttt{Authorization: Bearer <token>}) lẫn trong WebSocket Handshake (\texttt{socket.handshake.auth.token}), giúp thống nhất cơ chế xác thực giữa hai luồng giao tiếp REST API và WebSocket.
-
-Bcrypt là thuật toán băm mật khẩu một chiều có tích hợp \textit{salt} ngẫu nhiên và hệ số chi phí tính toán (\textit{cost factor}) có thể điều chỉnh, giúp tăng thời gian cần thiết cho các cuộc tấn công vét cạn (brute-force) hoặc tấn công bảng cầu vồng (rainbow table), qua đó bảo vệ mật khẩu người dùng ngay cả khi cơ sở dữ liệu bị rò rỉ.
-
-\subsubsection{Backend \& Cơ sở dữ liệu: Node.js, PostgreSQL và Redis}
+\subsubsection{Công nghệ xác thực: JWT, Bcrypt và Cơ chế Dual Token}
 \begin{itemize}[leftmargin=1.2cm]
-    \item \textbf{Node.js \& TypeScript:} Event Loop bất đồng bộ (Non-blocking I/O) xử lý hàng ngàn kết nối WebSocket đồng thời với bộ nhớ RAM thấp.
-    \item \textbf{PostgreSQL \& Redis (ioredis):} PostgreSQL lưu trữ bền vững thông tin tài khoản, phòng xem và lịch sử tin nhắn. Redis lưu trữ In-memory siêu tốc ($<1ms$) cho trạng thái phát thời gian thực (\texttt{isPlaying}, \texttt{progress}, \texttt{lastUpdated}).
+    \item \textbf{JWT (JSON Web Token - RFC 7519):} Cung cấp cơ chế xác thực \textit{stateless}. Chuỗi token mã hóa chứa thông tin nhận dạng người dùng được ký số bằng thuật toán HMAC-SHA256. Do tính chất không lưu phiên tại Server, JWT giúp hệ thống dễ dàng mở rộng và thống nhất xác thực giữa luồng REST API (\texttt{Authorization: Bearer}) lẫn WebSocket Handshake (\texttt{socket.handshake.auth.token}).
+    \item \textbf{Bcrypt Hashing:} Thuật toán băm mật khẩu một chiều tích hợp chuỗi \textit{salt} ngẫu nhiên và hệ số chi phí tính toán (\textit{cost factor = 10}), vô hiệu hóa các phương pháp tấn công vét cạn (brute-force) và bảng cầu vồng (rainbow table).
+    \item \textbf{Hệ thống Token kép (Dual Token System):} Sử dụng \textbf{Access Token} có thời hạn ngắn ($5$ phút) để giảm thiểu rủi ro khi bị lộ token, kết hợp \textbf{Refresh Token} có thời hạn dài ($7$ ngày) lưu trong đĩa HTTP-Only Cookie và đối chiếu danh sách trắng (whitelist) tại Redis.
+\end{itemize}
+
+
+\subsubsection{Backend \& Lưu trữ dữ liệu: Node.js, PostgreSQL và Redis}
+\begin{itemize}[leftmargin=1.2cm]
+    \item \textbf{Node.js \& TypeScript:} Kiến trúc Event Loop xử lý I/O bất đồng bộ (Non-blocking I/O) của Node.js kết hợp với tính chặt chẽ về kiểu dữ liệu của TypeScript giúp máy chủ duy trì hàng ngàn kết nối WebSocket đồng thời với bộ nhớ RAM cực kỳ tối ưu.
+    \item \textbf{PostgreSQL (Relational DBMS):} Đảm bảo tính toàn vẹn dữ liệu (ACID) cho việc lưu trữ lâu dài thông tin tài khoản người dùng, danh sách phòng xem, playlist cá nhân và lịch sử tin nhắn trò chuyện.
+    \item \textbf{Redis (In-memory Cache):} Bộ nhớ đệm In-memory với tốc độ truy xuất cực nhanh ($<1ms$), chịu trách nhiệm lưu giữ trạng thái phát tức thời của các phòng xem (\texttt{isPlaying}, \texttt{progress}, \texttt{lastUpdated}), mã OTP đăng ký và whitelist Refresh Token.
 \end{itemize}
 
 \newpage
@@ -179,27 +204,72 @@ Bcrypt là thuật toán băm mật khẩu một chiều có tích hợp \textit
 % ==================== PHẦN 2: CÔNG VIỆC TRIỂN KHAI ====================
 \section{PHẦN 2: CÔNG VIỆC TRIỂN KHAI}
 
-\subsection{Phân tích yêu cầu và Thiết kế kiến trúc hệ thống}
+\subsection{Phân tích yêu cầu và Thiết kế kiến trúc tổng thể hệ thống}
 
-\subsubsection{Thiết kế Cơ sở dữ liệu PostgreSQL}
-Hệ thống sử dụng 5 bảng dữ liệu quan hệ được chuẩn hóa:
-\begin{table}[h!]
+\subsubsection{Kiến trúc phân tầng Backend (Layered Architecture)}
+Để đảm bảo tính độc lập, dễ mở rộng và thuận tiện cho việc kiểm thử, hệ thống Backend của Watch Party được thiết kế tuân thủ nghiêm ngặt theo \textbf{Kiến trúc phân tầng (Layered Architecture)} với 4 tầng chính:
+
+\begin{table}[H]
 \centering
 \small
-\caption{Cấu trúc các bảng cơ sở dữ liệu PostgreSQL của hệ thống}
-\label{tab:db_schema_detail}
-\begin{tabular}{|l|p{4.5cm}|p{6.8cm}|}
+\caption{Các thành phần chính theo kiến trúc phân tầng của hệ thống Watch Party}
+\label{tab:arch_layers}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|p{3cm}|p{4.5cm}|p{7.5cm}|}
 \hline
-\textbf{Tên bảng} & \textbf{Trường thông tin} & \textbf{Mô tả \& Khóa} \\ \hline
-\texttt{users} & \texttt{id, username, password, email, display\_name, avatar\_url} & PK: \texttt{id}, UNIQUE: \texttt{username, email}. Lưu tài khoản người dùng. \\ \hline
-\texttt{user\_rooms} & \texttt{id, room\_id, name, description, user\_id, created\_at} & PK: \texttt{id}, FK: \texttt{user\_id} $\rightarrow$ \texttt{users(id)}. Quản lý thông tin phòng. \\ \hline
-\texttt{user\_playlists} & \texttt{id, user\_id, title, description, created\_at} & PK: \texttt{id}, FK: \texttt{user\_id} $\rightarrow$ \texttt{users(id)}. Lưu danh sách phát cá nhân. \\ \hline
-\texttt{user\_playlist\_items} & \texttt{id, playlist\_id, song\_id, title, thumbnail, duration} & PK: \texttt{id}, FK: \texttt{playlist\_id} $\rightarrow$ \texttt{user\_playlists(id)}. Chi tiết bài hát. \\ \hline
-\texttt{discussion\_messages} & \texttt{id, room\_id, user\_id, username, message, video\_timestamp} & PK: \texttt{id}, FK: \texttt{user\_id} $\rightarrow$ \texttt{users(id)}. Lưu lịch sử chat phòng. \\ \hline
+\textbf{Tầng Kiến trúc} & \textbf{Thành phần mã nguồn} & \textbf{Nhiệm vụ và Trách nhiệm chính} \\ \hline
+\textbf{API / Controller Layer} & \texttt{src/routes/*.ts}\newline \texttt{src/controllers/*.ts}\newline \texttt{src/sockets/*.ts} & Tiếp nhận yêu cầu HTTP REST API và sự kiện WebSocket từ Client; kiểm tra dữ liệu đầu vào (Validation); giải mã và kiểm tra quyền JWT bằng Middleware \texttt{authenticateToken}. \\ \hline
+\textbf{Service Layer} & \texttt{src/services/*.ts} & Chứa toàn bộ logic nghiệp vụ chính của hệ thống: xử lý đăng ký/đăng nhập, tính toán thuật toán bù độ trễ (Drift Compensation), quản lý quyền Host, gửi email OTP và dọn dẹp tệp video. \\ \hline
+\textbf{Repository Layer} & \texttt{src/db.ts}\newline (Data Access Queries) & Đóng gói các câu lệnh truy vấn SQL trực tiếp tới cơ sở dữ liệu PostgreSQL (thông qua thư viện \texttt{pg} Pool), tách biệt hoàn toàn logic nghiệp vụ khỏi cú pháp CSDL. \\ \hline
+\textbf{Database \& Cache Layer} & PostgreSQL \newline Redis In-memory & Lưu trữ bền vững dữ liệu tài khoản, phòng xem, lịch sử chat (PostgreSQL); Lưu trữ đệm trạng thái phát thời gian thực, OTP và Refresh Token (Redis). \\ \hline
 \end{tabular}
 \end{table}
 
-\begin{figure}[h!]
+Luồng phụ thuộc dữ liệu đi một chiều từ tầng giao tiếp xuống tầng dữ liệu. Ví dụ: Luồng xử lý tạo phòng xem nhóm:
+$$\text{HTTP Request} \xrightarrow{} \texttt{routes/room.ts} \xrightarrow{} \texttt{roomController.ts} \xrightarrow{} \texttt{roomService.ts} \xrightarrow{} \text{Postgres \& Redis}$$
+
+
+\subsubsection{Thiết kế Mô hình Dữ liệu PostgreSQL và Bộ đệm Redis}
+
+\textbf{1. Cơ sở dữ liệu PostgreSQL:} Hệ thống sử dụng 5 bảng dữ liệu quan hệ đã được chuẩn hóa:
+
+\begin{table}[H]
+\centering
+\small
+\caption{Cấu trúc các bảng dữ liệu chính trong PostgreSQL}
+\label{tab:db_schema_detail}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|l|p{5cm}|p{6.8cm}|}
+\hline
+\textbf{Tên bảng} & \textbf{Trường thông tin (Fields)} & \textbf{Mô tả \& Ràng buộc (Constraints)} \\ \hline
+\texttt{users} & \texttt{id, username, password, email, display\_name, avatar\_url} & PK: \texttt{id} (SERIAL), UNIQUE: \texttt{username}, \texttt{email}. Lưu thông tin tài khoản người dùng. \\ \hline
+\texttt{user\_rooms} & \texttt{id, room\_id, name, description, user\_id, created\_at} & PK: \texttt{id}, FK: \texttt{user\_id} $\rightarrow$ \texttt{users(id)} (CASCADE). Quản lý thông tin các phòng xem. \\ \hline
+\texttt{user\_playlists} & \texttt{id, user\_id, title, description, created\_at} & PK: \texttt{id}, FK: \texttt{user\_id} $\rightarrow$ \texttt{users(id)} (CASCADE). Quản lý các danh sách phát cá nhân. \\ \hline
+\texttt{user\_playlist\_items} & \texttt{id, playlist\_id, song\_id, title, thumbnail, duration, position} & PK: \texttt{id}, FK: \texttt{playlist\_id} $\rightarrow$ \texttt{user\_playlists(id)} (CASCADE). Lưu chi tiết từng video trong playlist. \\ \hline
+\texttt{discussion\_messages} & \texttt{id, room\_id, user\_id, username, message, video\_timestamp} & PK: \texttt{id}, FK: \texttt{user\_id} $\rightarrow$ \texttt{users(id)}. Lưu lịch sử tin nhắn trò chuyện đính kèm Timestamp. \\ \hline
+\end{tabular}
+\end{table}
+
+\textbf{2. Bộ đệm Redis Cache Schema:} Để đạt tốc độ đáp ứng thời gian thực ($<1ms$), các dữ liệu có tần suất thay đổi cao được quản lý trên Redis:
+
+\begin{table}[H]
+\centering
+\small
+\caption{Cấu trúc các khóa bộ đệm (Keys) lưu trữ trên Redis}
+\label{tab:redis_keys}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|p{4.2cm}|p{2.5cm}|p{1.8cm}|p{6.5cm}|}
+\hline
+\textbf{Cấu trúc Redis Key} & \textbf{Kiểu dữ liệu} & \textbf{TTL} & \textbf{Mục đích sử dụng} \\ \hline
+\texttt{wp:<roomId>:state} & Hash & Không & Lưu trạng thái phát tức thời: \texttt{isPlaying}, \texttt{progress}, \texttt{lastUpdated}, \texttt{currentVideoId}, \texttt{hostId}. \\ \hline
+\texttt{wp:refreshtoken:<userId>} & String & 7 Ngày & Whitelist Refresh Token phục vụ xác thực gia hạn phiên đăng nhập và chủ động thu hồi (Logout). \\ \hline
+\texttt{wp:otp:<email>} & String / JSON & 5 Phút & Lưu mã OTP 6 chữ số kèm dữ liệu đăng ký tạm thời khi người dùng tạo tài khoản. \\ \hline
+\texttt{wp:<roomId>:members} & Set & Không & Tập hợp danh sách socket ID của các thành viên đang hoạt động trong phòng. \\ \hline
+\end{tabular}
+\end{table}
+
+
+\begin{figure}[H]
 \centering
 \resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
@@ -278,11 +348,10 @@ Hệ thống sử dụng 5 bảng dữ liệu quan hệ được chuẩn hóa:
 \label{fig:db_erd_schema}
 \end{figure}
 
-\subsubsection{Sơ đồ luồng dữ liệu}
-\begin{itemize}[leftmargin=1.2cm]
-    \item \textbf{Luồng đăng nhập JWT:} Client gửi thông tin đăng nhập $\rightarrow$ Server xác thực Bcrypt hash $\rightarrow$ Tạo chuỗi JWT mã hóa trả về cho Client lưu vào LocalStorage.
-    \item \textbf{Luồng đồng bộ trạng thái phát video (Sequence Flow):}
-\begin{figure}[h!]
+
+\subsubsection{Sơ đồ luồng xử lý đồng bộ thời gian thực (Sequence Flow)}
+
+\begin{figure}[H]
 \centering
 \resizebox{\linewidth}{!}{%
 \begin{tikzpicture}[
@@ -333,75 +402,112 @@ Hệ thống sử dụng 5 bảng dữ liệu quan hệ được chuẩn hóa:
 \caption{Sơ đồ luồng xử lý đồng bộ trạng thái phát video thời gian thực}
 \label{fig:sync_sequence_flow}
 \end{figure}
-\end{itemize}
 
-\subsection{Triển khai các Module chức năng}
 
-\subsubsection{Module Xác thực và Quản lý phòng xem}
-\begin{itemize}[leftmargin=1.2cm]
-    \item \textbf{REST API Auth:} Xây dựng các route đăng ký, đăng nhập và middleware \texttt{authenticateToken} giải mã JWT Token trong Header \texttt{Authorization: Bearer <token>}.
-    \item \textbf{WebSocket Handshake Auth:} Khi thiết lập kết nối socket, Server lấy token từ \texttt{socket.handshake.auth.token} để xác thực danh tính người dùng và phân nhóm socket vào Room tương ứng qua lệnh \texttt{socket.join(roomId)}.
-\end{itemize}
+\subsection{Triển khai Phân Quyền}
 
-\subsubsection{Module Đồng bộ Video và Thuật toán Bù sai lệch}
-\begin{itemize}[leftmargin=1.2cm]
-    \item \textbf{Khắc phục vòng lặp sự kiện (Event Loop Feedback Loop):} Khi Client nhận lệnh đồng bộ từ Server và gọi API trình phát (\texttt{seekTo}, \texttt{pauseVideo}), sự kiện \texttt{onStateChange} tự động bật làm gửi ngược sự kiện lên Server. Hệ thống sử dụng cờ \texttt{isSyncing = true} tại Client để tạm thời bỏ qua phát sự kiện trong $300ms$.
-    \item \textbf{Thuật toán bù sai lệch thời gian (Drift Compensation):} Khi người dùng mới tham gia phòng, Server tính thời gian video đã phát (tính bằng giây) bằng công thức, trong đó \texttt{lastUpdated} là mốc thời gian (Unix timestamp, đơn vị mili-giây) được lưu trong Redis tại lần cập nhật gần nhất, và phép chia cho $1000$ dùng để quy đổi từ mili-giây sang giây:
-    $$\text{progress (s)} = \text{progress\_gốc (s)} + \frac{\text{Thời gian hiện tại (ms)} - \text{lastUpdated (ms)}}{1000}$$
-\end{itemize}
-
-\subsubsection{Module Trò chuyện nhóm thời gian thực}
-Server lắng nghe sự kiện \texttt{send-discussion-message}, trích xuất \texttt{videoTimestamp} hiện tại, lưu tin nhắn vào PostgreSQL và phát sự kiện \texttt{new-discussion-message} cho toàn bộ thành viên trong phòng.
-
-\subsubsection{Module Xác thực OTP Email và Quản lý Hồ sơ cá nhân}
-\begin{itemize}[leftmargin=1.2cm]
-    \item \textbf{Xác thực OTP qua Email (Nodemailer \& Redis):} Quy trình xác thực 2 bước cho Đăng ký tài khoản và Quên/Khôi phục mật khẩu. Hệ thống tạo mã xác thực 6 chữ số ngẫu nhiên gửi tới email người dùng thông qua thư viện \texttt{Nodemailer} (tích hợp SMTP Gmail / Ethereal Test Email). Thông tin đăng ký tạm thời và mã OTP được lưu trữ đệm trong Redis với thời gian hết hạn (TTL) là $5$ phút (\texttt{300s}), giúp giảm tải bộ nhớ đĩa CSDL chính và đảm bảo tính bảo mật.
+\subsubsection{Phân hệ Xác thực, OTP Email và Hệ thống Token Kép}
+\begin{enumerate}[leftmargin=1.2cm]
+    \item \textbf{Xác thực OTP qua Email (Nodemailer \& Redis):} Quy trình xác thực 2 bước cho Đăng ký tài khoản và Khôi phục mật khẩu. Hệ thống tạo mã xác thực 6 chữ số ngẫu nhiên gửi tới email người dùng thông qua thư viện \texttt{Nodemailer} (tích hợp SMTP Gmail / Ethereal Test Email). Thông tin đăng ký tạm thời và mã OTP được lưu trữ đệm trong Redis với thời gian hết hạn (TTL) là $5$ phút (\texttt{300s}), giúp giảm tải cho CSDL chính.
     \item \textbf{Cơ chế Token kép (Dual Token System):} Hệ thống áp dụng mô hình bảo mật với hai loại token: Access Token ngắn hạn ($5$ phút) ký bằng thuật toán HMAC-SHA256 phục vụ xác thực các truy vấn REST API và kết nối WebSocket; và Refresh Token dài hạn ($7$ ngày) được lưu trữ an toàn trong HTTP-Only Cookie tại trình duyệt và đối chiếu trực tiếp với bộ nhớ Redis (\texttt{wp:refreshtoken:<userId>}). Endpoint \texttt{/refresh} hỗ trợ tự động gia hạn Access Token mà không gián đoạn trải nghiệm người dùng, đồng thời endpoint \texttt{/logout} chủ động thu hồi (revoke) Refresh Token khỏi Redis.
-    \item \textbf{Quản lý thông tin hồ sơ và Tải lên Ảnh đại diện (Avatar Upload):} Cung cấp các API xem chi tiết hồ sơ người dùng (\texttt{GET /api/auth/me}) và cập nhật tên hiển thị (\texttt{PUT /api/auth/profile}). Tính năng tải lên ảnh đại diện (\texttt{POST /api/auth/avatar}) được xử lý qua middleware \texttt{Multer}, tự động kiểm tra định dạng MIME (chỉ chấp nhận tệp hình ảnh), giới hạn dung lượng tối đa $5MB$, tạo tên tệp duy nhất theo timestamp và lưu trữ trong thư mục tĩnh \texttt{public/uploads/avatars}.
+\end{enumerate}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Các khó khăn kỹ thuật và giải pháp trong Phân hệ Xác thực}
+\label{tab:auth_problems}
+\renewcommand{\arraystretch}{1.35}
+\begin{tabular}{|p{5.5cm}|p{8.5cm}|}
+\hline
+\textbf{Khó khăn kỹ thuật} & \textbf{Giải pháp áp dụng} \\ \hline
+Không thể chủ động đăng xuất/thu hồi phiên đăng nhập khi sử dụng JWT đơn thuần (Stateless). & Áp dụng cơ chế Dual Token: Access Token sống ngắn (5m) kết hợp Refresh Token (7d) lưu ở HTTP-Only Cookie và kiểm tra danh sách trắng trên Redis. Khi đăng xuất, xóa ngay key khỏi Redis. \\ \hline
+Spam gửi mã OTP làm cạn kiệt hạn ngạch SMTP và đầy bộ nhớ server. & Lưu OTP trên Redis với TTL 5 phút, thiết lập Rate Limiting giới hạn 1 yêu cầu gửi OTP mỗi 60 giây cho mỗi IP/Email. \\ \hline
+Xác thực kết nối WebSocket khi token hết hạn giữa chừng. & Bắt sự kiện \texttt{socket.handshake.auth.token} tại Middleware server. Khi token hết hạn, socket tự động phát sự kiện \texttt{auth-error} để Client gọi API \texttt{/refresh} lấy token mới. \\ \hline
+\end{tabular}
+\end{table}
+
+
+\subsubsection{Phân hệ Đồng bộ Video và Thuật toán Bù sai lệch (Drift Compensation)}
+\begin{enumerate}[leftmargin=1.2cm]
+    \item \textbf{Khắc phục vòng lặp sự kiện (Event Loop Feedback Loop):} Khi Client nhận lệnh đồng bộ từ Server và gọi API trình phát (\texttt{seekTo}, \texttt{pauseVideo}), sự kiện \texttt{onStateChange} tự động bật làm gửi ngược sự kiện lên Server gây ra vòng lặp vô tận. Hệ thống giải quyết bằng cờ cản \texttt{isSyncing = true} tại Client để tạm thời bỏ qua gửi sự kiện trong $300ms$.
+    \item \textbf{Thuật toán bù sai lệch thời gian (Drift Compensation):} Khi người dùng mới tham gia phòng xem đang phát, Server tự động tính mốc thời gian video thực tế bằng công thức:
+    $$\text{progress (s)} = \text{progress}_{\text{gốc}} (\text{s}) + \frac{\text{Thời gian hiện tại (ms)} - \text{lastUpdated (ms)}}{1000}$$
+    Trong đó \texttt{lastUpdated} là Unix Timestamp (ms) ghi nhận tại lần cập nhật gần nhất trên Redis.
+\end{enumerate}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Các khó khăn kỹ thuật và giải pháp trong Phân hệ Đồng bộ Video}
+\label{tab:sync_problems}
+\renewcommand{\arraystretch}{1.35}
+\begin{tabular}{|p{5.5cm}|p{8.5cm}|}
+\hline
+\textbf{Khó khăn kỹ thuật} & \textbf{Giải pháp áp dụng} \\ \hline
+Vòng lặp sự kiện Feedback Loop khi Client nhận lệnh và kích hoạt lại listener của video player. & Sử dụng cờ hiệu \texttt{isSyncing = true} trong $300ms$ tại Client để bỏ qua việc phát tin nhắn Socket ngược lại Server khi nhận lệnh đồng bộ. \\ \hline
+Người dùng mới vào phòng xem bị lệch thời gian phát so với các thành viên cũ. & Áp dụng thuật toán Drift Compensation trên Server, tự động cộng thêm khoảng thời gian trôi qua $(\Delta t = T_{now} - T_{lastUpdated})$ trước khi gửi trạng thái cho Client mới. \\ \hline
+Độ trễ mạng chập chờn (Jitter) khiến trình phát giật lag nếu liên tục Seek. & Thiết lập ngưỡng bỏ qua lệch pha (Tolerance Threshold = $1.5s$). Nếu chênh lệch giữa Client và Server $< 1.5s$, trình phát giữ nguyên tốc độ không thực hiện Seek cưỡng bức. \\ \hline
+\end{tabular}
+\end{table}
+
+
+\subsubsection{Phân hệ Tải lên và Phát Trực tuyến Video Tùy chỉnh (HTTP Range Requests 206)}
+\begin{enumerate}[leftmargin=1.2cm]
+    \item \textbf{Truyền dữ liệu phát phân đoạn (HTTP Range Requests 206):} Tuyến đường API \texttt{GET /api/videos/stream/:filename} xử lý tiêu đề \texttt{Range} từ trình duyệt. Server phản hồi mã \texttt{206 Partial Content} kèm tiêu đề \texttt{Content-Range: bytes start-end/fileSize}, cho phép tải từng phân đoạn nhị phân dựa trên Stream I/O của Node.js (\texttt{fs.createReadStream}), hỗ trợ tua mượt video dung lượng lớn ($<10GB$).
+    \item \textbf{Cơ chế tự động dọn dẹp đĩa (Auto Disk Cleanup):} Tích hợp hàm \texttt{cleanupCustomVideoFile()} xóa tệp vật lý bằng \texttt{fs.unlinkSync()} ngay khi bài hát bị gỡ khỏi Queue. Đồng thời, Cron Job ngầm chạy định kỳ mỗi $1$ giờ sẽ loại bỏ các tệp video rác tồn tại quá $6$ giờ.
+\end{enumerate}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Các khó khăn kỹ thuật và giải pháp trong Phân hệ Video Streaming}
+\label{tab:stream_problems}
+\renewcommand{\arraystretch}{1.35}
+\begin{tabular}{|p{5.5cm}|p{8.5cm}|}
+\hline
+\textbf{Khó khăn kỹ thuật} & \textbf{Giải pháp áp dụng} \\ \hline
+Trình duyệt bị treo RAM hoặc crash khi nạp toàn bộ file video dung lượng lớn ($>2GB$). & Triển khai kĩ thuật HTTP Range Requests (Code 206 Partial Content) chia nhỏ video thành các chunks dữ liệu nhị phân đọc qua Node.js ReadStream. \\ \hline
+Tràn dung lượng ổ đĩa Server do tệp video tải lên không được quản lý. & Xây dựng cơ chế dọn dẹp kép: Xóa tức thì tệp khi gỡ bài khỏi Queue và chạy Cron Job dọn dẹp tự động hàng giờ cho các tệp mồ côi quá 6 giờ. \\ \hline
+\end{tabular}
+\end{table}
+
+
+\subsubsection{Phân hệ Phân quyền Chủ phòng và Quản lý Playlist cá nhân}
+\begin{itemize}[leftmargin=1.2cm]
+    \item \textbf{Phân quyền Chủ phòng (Host Permissions):} Hệ thống tự động nhận diện người tạo phòng xem là Host (đối chiếu dữ liệu từ PostgreSQL \texttt{user\_rooms} kết hợp bộ đệm Redis \texttt{wp:<roomId>:host}). Chủ phòng nắm quyền hạn cao nhất: thay đổi quyền tương tác của thành viên (\texttt{toggle-permission}: gán quyền Read-Only hoặc Write Permission cho người xem), xóa toàn bộ lịch sử chat phòng (\texttt{clear-discussion}), và thực hiện chuyển sang video tiếp theo (\texttt{next-song}).
+    \item \textbf{Quản lý Danh sách phát cá nhân (Personal Playlists):} Người dùng có thể tự tạo các danh sách phát cá nhân lưu trữ bền vững trong PostgreSQL (\texttt{user\_playlists} và \texttt{user\_playlist\_items}). Module hỗ trợ đầy đủ các thao tác CRUD: thêm/xóa bài hát, cập nhật tiêu đề/mô tả, thay đổi thứ tự ưu tiên (Reorder items) theo chỉ số \texttt{position}, và cho phép nạp hàng loạt (Batch load) các bài hát từ playlist cá nhân vào hàng chờ (Queue) của phòng xem nhóm.
 \end{itemize}
 
-\subsubsection{Module Tải lên và Phát Trực tuyến Video Tùy chỉnh}
-\begin{itemize}[leftmargin=1.2cm]
-    \item \textbf{Tải lên Video địa phương (Custom Video Upload):} Ngoài việc nhúng các video phát từ YouTube, hệ thống hỗ trợ chủ phòng và các thành viên tải lên tệp video cá nhân từ máy tính (\texttt{POST /api/videos/upload}) với các định dạng phổ biến (\texttt{.mp4}, \texttt{.webm}, \texttt{.mkv}, \texttt{.avi}, \texttt{.mov}) và dung lượng hỗ trợ lên tới $10GB$. Tệp video được kiểm tra MIME-type và lưu trữ an toàn trong thư mục \texttt{public/uploads/videos}.
-    \item \textbf{Truyền dữ liệu phát phân đoạn chuẩn HTTP Range Requests:} Xây dựng tuyến đường API chuyên dụng \texttt{GET /api/videos/stream/:filename} xử lý header \texttt{Range} từ yêu cầu HTTP của trình duyệt. Server phản hồi mã trạng thái \texttt{206 Partial Content} kèm tiêu đề \texttt{Content-Range: bytes start-end/fileSize}, cho phép trình duyệt tải từng phân đoạn nhị phân (chunked streaming) dựa trên stream I/O của Node.js (\texttt{fs.createReadStream}). Cơ chế này giúp người dùng tua (seek) mượt mà đến mốc thời gian bất kỳ trong video dung lượng lớn mà không cần nạp toàn bộ tệp về máy.
-    \item \textbf{Cơ chế tự động dọn dẹp bộ nhớ đĩa (Auto Disk Cleanup):} Để hạn chế rò rỉ dung lượng ổ đĩa do các tệp video đã phát xong hoặc bị loại khỏi danh sách chờ, hệ thống tích hợp hàm \texttt{cleanupCustomVideoFile()} tự động thực thi xóa tệp vật lý bằng \texttt{fs.unlinkSync()} ngay khi bài hát bị gỡ khỏi Queue. Đồng thời, một Cron Job chạy ngầm định kỳ mỗi $1$ giờ sẽ quét thư mục tải lên và loại bỏ các tệp video tồn tại quá $6$ giờ.
-\end{itemize}
 
-\subsubsection{Module Phân quyền Chủ phòng và Quản lý Danh sách phát Cá nhân}
-\begin{itemize}[leftmargin=1.2cm]
-    \item \textbf{Phân quyền Chủ phòng (Host Permissions):} Hệ thống tự động nhận diện người tạo phòng xem là Host (đối chiếu dữ liệu từ PostgreSQL \texttt{user\_rooms} kết hợp bộ đệm Redis \texttt{wp:<roomId>:host}). Chủ phòng nắm quyền hạn cao nhất: thay đổi quyền tương tác của thành viên (\texttt{toggle-permission}: gán quyền Read-Only hoặc Write Permission cho người xem), xóa toàn bộ lịch sử chat phòng (\texttt{clear-discussion}), và thực hiện chuyển sang video tiếp theo (\texttt{next-song}). Sự thay đổi quyền tác vụ được cập nhật tức thì đến toàn bộ kết nối trong phòng qua sự kiện \texttt{room-members-updated}.
-    \item \textbf{Quản lý Danh sách phát cá nhân (Personal Playlists):} Người dùng có thể tự tạo các danh sách phát cá nhân lưu trữ bền vững trong PostgreSQL (\texttt{user\_playlists} và \texttt{user\_playlist\_items}). Module hỗ trợ đầy đủ các thao tác CRUD: thêm/xóa bài hát, cập nhật tiêu đề/mô tả, thay đổi thứ tự ưu tiên (Reorder items) theo chỉ số \texttt{position}, và cho phép nạp hàng loạt (Batch load) các bài hát từ playlist cá nhân vào hàng chờ (Queue) của phòng xem nhóm thời gian thực.
-\end{itemize}
-
-\subsubsection{Module Giám sát Hệ thống và Quản trị (Admin Dashboard)}
-\begin{itemize}[leftmargin=1.2cm]
-    \item \textbf{API Giám sát thông số máy chủ (\texttt{GET /api/admin/stats}):} Thu thập và phân tích trực tiếp tài nguyên phần cứng hệ thống thông qua module \texttt{os} của Node.js (tỷ lệ sử dụng RAM, số lượng nhân CPU, Uptime hệ thống) và kiểm tra trạng thái kết nối thời gian thực (Health Check) tới hai cơ sở dữ liệu PostgreSQL và Redis.
-    \item \textbf{Quản trị Phòng xem và Tài khoản người dùng:} Trang quản trị cung cấp các REST API cho phép Admin: quét toàn bộ danh sách các phòng đang hoạt động từ Redis (\texttt{GET /api/admin/rooms}); giải phóng bộ nhớ phòng và buộc ngắt kết nối các thành viên (\texttt{DELETE /api/admin/rooms/:roomId}); quản lý và xóa tài khoản người dùng khỏi PostgreSQL (\texttt{DELETE /api/admin/users/:id}); cũng như xóa sạch bộ nhớ đệm Redis (\texttt{POST /api/admin/redis/flush}) khi cần bảo trì hệ thống.
-\end{itemize}
+\subsubsection{Phân hệ Giám sát Hệ thống (Admin Dashboard)}
+Cung cấp tuyến đường API \texttt{GET /api/admin/stats} thu thập tài nguyên phần cứng thông qua module \texttt{os} của Node.js (tỷ lệ sử dụng RAM, CPU, Uptime hệ thống) và kiểm tra trạng thái kết nối (Health Check) tới PostgreSQL và Redis. Trang quản trị hỗ trợ các tính năng quản lý nâng cao: cưỡng bức giải phóng phòng xem active (\texttt{DELETE /api/admin/rooms/:roomId}), quản lý tài khoản người dùng và flush bộ nhớ đệm Redis khi cần bảo trì.
 
 \newpage
-
 
 % ==================== PHẦN 3: CÁC KẾT QUẢ ĐẠT ĐƯỢC ====================
 \section{PHẦN 3: CÁC KẾT QUẢ ĐẠT ĐƯỢC}
 
 \subsection{Giới thiệu sản phẩm phần mềm và Giao diện}
 
-Hệ thống đã hoàn thiện 100\% các chức năng với giao diện Web Single Page Application (SPA) responsive:
+Hệ thống đã hoàn thiện 100\% các chức năng với giao diện Web Single Page Application (SPA) responsive hiện đại, tối ưu cho cả thiết bị máy tính và di động:
 \begin{enumerate}[leftmargin=1.2cm]
-    \item \textbf{Giao diện Đăng nhập / Đăng ký \& Xác thực OTP:} Đăng nhập JWT, đăng ký và lấy lại mật khẩu xác thực qua mã OTP 6 chữ số gửi về Email.
-    \item \textbf{Giao diện Quản lý phòng xem \& Playlist cá nhân:} Tạo phòng mới, quản lý danh sách phòng cá nhân và danh sách phát cá nhân (Personal Playlists).
-    \item \textbf{Giao diện Phòng xem trực tuyến:} Trình phát video HTML5 (hỗ trợ upload/stream HTTP Range 206) / YouTube, Hàng chờ phát bài (Queue), Trò chuyện đính kèm Timestamp, Danh sách thành viên online và bảng điều khiển phân quyền của Host.
-    \item \textbf{Giao diện Quản trị viên (Admin Dashboard):} Giám sát phần cứng máy chủ (RAM, CPU, Uptime), trạng thái CSDL (PostgreSQL, Redis) và quản lý các phòng xem active.
+    \item \textbf{Giao diện Đăng nhập / Đăng ký \& Xác thực OTP:} Đăng nhập mã hóa JWT, đăng ký tài khoản và khôi phục mật khẩu qua mã OTP 6 chữ số gửi về Email.
+    \item \textbf{Giao diện Quản lý phòng xem \& Playlist cá nhân:} Cho phép khởi tạo phòng xem, quản lý các danh sách phát cá nhân và chỉnh sửa thứ tự bài hát mượt mà.
+    \item \textbf{Giao diện Phòng xem nhóm trực tuyến (Watch Room):} Trình phát video HTML5 (hỗ trợ upload/stream HTTP Range 206) / YouTube Player API, Hàng chờ phát bài (Queue), Trò chuyện đính kèm Timestamp, Danh sách thành viên online và bảng điều khiển phân quyền của Host.
+    \item \textbf{Giao diện Quản trị viên (Admin Dashboard):} Giám sát chỉ số phần cứng máy chủ thời gian thực (RAM, CPU, Uptime), tình trạng kết nối CSDL và danh sách các phòng xem active.
 \end{enumerate}
 
 \subsection{Kết quả kiểm thử và Phân tích lỗi kỹ thuật}
 
 \subsubsection{Kết quả các Test Cases kiểm thử chức năng}
-\begin{table}[h!]
+
+\begin{table}[H]
 \centering
-\caption{Bảng tổng hợp kết quả kiểm thử các chức năng chính}
+\small
+\caption{Bảng tổng hợp kết quả kiểm thử các chức năng chính của hệ thống}
 \label{tab:test_cases_summary}
+\renewcommand{\arraystretch}{1.25}
 \begin{tabular}{|c|p{4.8cm}|p{5.2cm}|c|}
 \hline
 \textbf{STT} & \textbf{Kịch bản kiểm thử (Test Case)} & \textbf{Kết quả kỳ vọng} & \textbf{Trạng thái} \\ \hline
@@ -419,20 +525,15 @@ Hệ thống đã hoàn thiện 100\% các chức năng với giao diện Web Si
 \end{table}
 
 
-\subsubsection{Phân tích lỗi kỹ thuật và Cách khắc phục}
-\begin{enumerate}[leftmargin=1.2cm]
-    \item \textbf{Lỗi vòng lặp sự kiện vô hạn:} Gọi lệnh API trình phát kích hoạt lại sự kiện \texttt{onStateChange}. \textit{Khắc phục:} Sử dụng cờ cản \texttt{isSyncing} tạm khóa gửi tin nhắn lên Server trong $300ms$.
-    \item \textbf{Lỗi trôi thời gian phát (Time Drift):} Thời gian phát cố định khiến người vào sau bị lệch pha. \textit{Khắc phục:} Thuật toán Drift Compensation tự động tính thời gian trôi qua dựa trên \texttt{lastUpdated} lưu trong Redis.
-    \item \textbf{Lỗi rò rỉ tệp tin rác trên đĩa:} Video tự tải lên không bị xóa khi bỏ khỏi Queue. \textit{Khắc phục:} Xây dựng hàm \texttt{cleanupCustomVideoFile()} xóa tệp tin bằng \texttt{fs.unlinkSync()} ngay khi gỡ bài.
-    \item \textbf{Lỗi Token JWT hết hạn:} Ngắt kết nối WebSocket giữa chừng. \textit{Khắc phục:} Đăng ký handler \texttt{auth-error} hiển thị thông báo và chuyển hướng đăng nhập lại.
-\end{enumerate}
-
 \subsubsection{Đánh giá độ trễ đồng bộ (Latency Benchmark)}
-Độ trễ đồng bộ được đo bằng cách ghi nhận khoảng thời gian từ lúc Client A phát sự kiện điều khiển (\texttt{set-playback}) tới lúc Client B nhận được sự kiện \texttt{playback-updated} tương ứng, sử dụng đồng hồ \texttt{performance.now()} tại cả hai đầu và đồng bộ lệch giờ hệ thống trước khi đo. Mỗi kịch bản mạng được đo lặp lại $50$ lần liên tiếp để lấy giá trị tối thiểu, trung bình và tối đa:
-\begin{table}[h!]
+Độ trễ đồng bộ được đo bằng cách ghi nhận khoảng thời gian từ lúc Client A phát sự kiện điều khiển (\texttt{set-playback}) tới lúc Client B nhận được sự kiện \texttt{playback-updated} tương ứng, sử dụng đồng hồ \texttt{performance.now()} tại cả hai đầu. Mỗi kịch bản mạng được đo lặp lại $50$ lần liên tiếp để lấy giá trị tối thiểu, trung bình và tối đa:
+
+\begin{table}[H]
 \centering
+\small
 \caption{Đánh giá độ trễ đồng bộ video thời gian thực trong các kịch bản mạng}
 \label{tab:latency_bench}
+\renewcommand{\arraystretch}{1.3}
 \begin{tabular}{|p{4.5cm}|c|c|c|}
 \hline
 \textbf{Môi trường mạng kiểm thử} & \textbf{Độ trễ tối thiểu} & \textbf{Độ trễ trung bình} & \textbf{Độ trễ tối đa} \\ \hline
@@ -442,11 +543,12 @@ Mạng di động 4G / Ngrok Tunnel & $120ms$ & $210ms$ & $380ms$ \\ \hline
 \end{tabular}
 \end{table}
 
+
 \subsection{Đánh giá ưu nhược điểm \& Bài học kinh nghiệm}
 \begin{itemize}[leftmargin=1.2cm]
-    \item \textbf{Ưu điểm:} Độ trễ siêu thấp ($<300ms$), xác thực JWT bảo mật, xử lý triệt để các sự cố vòng lặp và dọn dẹp bộ nhớ.
-    \item \textbf{Hạn chế:} Khi kết nối mạng của Client bị chập chờn quá mức (Packet loss), trình phát bị nạp đệm (Buffering) gây lệch nhẹ trước khi đợt Sync tiếp theo cân chỉnh.
-    \item \textbf{Bài học kinh nghiệm:} Nâng cao tư duy thiết kế hệ thống thời gian thực bất đồng bộ, kết hợp PostgreSQL \& Redis và kỹ năng phân tích nguyên nhân lỗi kỹ thuật.
+    \item \textbf{Ưu điểm:} Độ trễ đồng bộ siêu thấp ($<300ms$), kiến trúc xác thực Token kép bảo mật, xử lý triệt để các sự cố vòng lặp sự kiện và dọn dẹp đĩa tự động.
+    \item \textbf{Hạn chế:} Khi kết nối mạng của Client bị mất gói (Packet loss) nặng, trình phát bị nạp đệm (Buffering) có thể gây lệch pha tạm thời trước khi lượt Sync tiếp theo cân chỉnh.
+    \item \textbf{Bài học kinh nghiệm:} Nâng cao tư duy thiết kế hệ thống bất đồng bộ thời gian thực, làm chủ việc kết hợp PostgreSQL \& Redis, và rèn luyện kỹ năng phân tích vết lỗi (debugging).
 \end{itemize}
 
 \newpage
@@ -455,9 +557,14 @@ Mạng di động 4G / Ngrok Tunnel & $120ms$ & $210ms$ & $380ms$ \\ \hline
 \section*{KẾT LUẬN}
 \addcontentsline{toc}{section}{KẾT LUẬN}
 
-Báo cáo đã hoàn thành đầy đủ các yêu cầu chuyên môn. Sản phẩm giải quyết bài toán đồng bộ phiên xem video nhóm qua mạng với độ trễ thấp, đem lại trải nghiệm tương tác mượt mà. Thông qua đợt thực tập, sinh viên đã củng cố kiến thức đào tạo tại Khoa Toán - Cơ - Tin học và làm chủ công nghệ lập trình Web thời gian thực.
+Báo cáo kết thúc thực tập đã hoàn thành đầy đủ và chỉn chu các mục tiêu đề ra. Sản phẩm Web Application **Watch Party** đã giải quyết triệt để bài toán đồng bộ phiên xem video nhóm qua mạng internet với độ trễ siêu thấp ($<300ms$), đem lại trải nghiệm tương tác mượt mà và chân thực cho người dùng. Thông qua đợt thực tập, sinh viên đã củng cố vững chắc các kiến thức nền tảng đào tạo tại Khoa Toán - Cơ - Tin học, đồng thời làm chủ công nghệ lập trình Web thời gian thực với Node.js, Socket.IO, PostgreSQL và Redis.
 
-Trong thời gian tới, đề tài có thể được mở rộng theo một số hướng: bổ sung cơ chế phân quyền chủ phòng (host) để kiểm soát quyền điều khiển video; áp dụng Redis Adapter cho Socket.IO nhằm mở rộng hệ thống theo chiều ngang (horizontal scaling) khi số lượng người dùng tăng cao; tích hợp thêm các nguồn video ngoài YouTube; và bổ sung các tính năng tương tác như biểu tượng cảm xúc thời gian thực, chia sẻ màn hình giữa các thành viên trong phòng. Đây sẽ là nền tảng để phát triển sản phẩm thành một ứng dụng hoàn chỉnh, sẵn sàng triển khai ở quy mô lớn hơn.
+Trong thời gian tới, hệ thống có thể được tiếp tục mở rộng theo các hướng phát triển:
+\begin{enumerate}[leftmargin=1.2cm]
+    \item Áp dụng **Redis Adapter cho Socket.IO** nhằm hỗ trợ mở rộng hệ thống theo chiều ngang (Horizontal Scaling) trên nhiều cụm máy chủ Backend khi lượng người dùng tăng cao.
+    \item Tích hợp tính năng **Chia sẻ màn hình thời gian thực (WebRTC)** và biểu tượng cảm xúc tương tác nhanh (Live Reactions) trên khung hình video.
+    \item Phát triển ứng dụng di động đa nền tảng (React Native / Flutter) giúp kết nối người dùng linh hoạt hơn.
+\end{enumerate}
 
 \newpage
 
@@ -475,29 +582,6 @@ Trong thời gian tới, đề tài có thể được mở rộng theo một s�
     \item Node.js Foundation, \textit{Node.js v20 LTS Documentation}, URL: \url{https://nodejs.org/docs/}.
 \end{enumerate}
 
-\newpage
 
-% ==================== PHỤ LỤC ====================
-\section*{PHỤ LỤC}
-\addcontentsline{toc}{section}{PHỤ LỤC}
-
-\subsection*{Phụ lục A: Cấu trúc thư mục mã nguồn}
-\begin{itemize}[leftmargin=1.2cm]
-    \item \textbf{Backend:} \texttt{src/config} (Postgres, Redis), \texttt{src/controllers}, \texttt{src/routes}, \texttt{src/services}, \texttt{src/sockets}, \texttt{src/db.ts}, \texttt{src/index.ts}.
-    \item \textbf{Frontend:} \texttt{src/api}, \texttt{src/components}, \texttt{src/pages}, \texttt{src/main.ts}, \texttt{src/style.css}, \texttt{index.html}.
-\end{itemize}
-
-\subsection*{Phụ lục B: Cấu hình môi trường và Cài đặt}
-\begin{enumerate}[leftmargin=1.2cm]
-    \item Khởi chạy Postgres \& Redis: \texttt{docker compose up -d}
-    \item Khởi chạy Backend Server: \texttt{cd backend \&\& npm install \&\& npm run dev}
-    \item Khởi chạy Frontend Client: \texttt{cd frontend \&\& npm install \&\& npm run dev}
-\end{enumerate}
-
-\subsection*{Phụ lục C: Link Repository và Video Demo}
-\begin{itemize}[leftmargin=1.2cm]
-    \item \textbf{GitHub Repository:} \url{https://github.com/namxivin/CWH}
-    \item \textbf{Video Demo:} \url{https://youtube.com/watch?v=demo_hus}
-\end{itemize}
 
 \end{document}
