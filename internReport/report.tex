@@ -55,7 +55,7 @@
         
         \textbf{\Large BÁO CÁO KẾT THÚC THỰC TẬP}\\[0.8cm]
         
-        {\Large \bfseries Ứng dụng WebSocket trong việc xây dựng trang web xem video đồng bộ trạng thái độ trễ thấp}
+        {\Large \bfseries Ứng dụng WebSocket trong việc xây dựng trang web xem video đồng bộ trạng thái}
         \vspace{2cm}
         
         \begin{minipage}{0.85\textwidth}
@@ -146,7 +146,7 @@ Trong bối cảnh bùng nổ của các nền tảng giải trí số và mạn
 Việc đồng bộ hóa thủ công các thao tác phát video (ví dụ: đếm ngược 3--2--1 qua cuộc gọi thoại để cùng bấm \textit{Play} hoặc \textit{Pause}) gặp phải hạn chế rất lớn do sự lệch pha độ trễ mạng ($2s - 10s$), sự biến động của gói tin mạng (jitter) và sự khác biệt về tốc độ giải mã phần cứng giữa các thiết bị. Điều này gây mất tính tương tác thời gian thực, khiến trải nghiệm xem video nhóm bị gián đoạn mỗi khi có thành viên tạm dừng video để thảo luận hoặc tua đến phân đoạn yêu thích.
 
 \textbf{Công việc được giao trong đợt thực tập:}
-Nhiệm vụ trọng tâm của đợt thực tập là nghiên cứu sâu về giao thức truyền thông hai chiều thời gian thực WebSocket, kết hợp kiến trúc máy chủ xử lý sự kiện bất đồng bộ để xây dựng nền tảng Web Application \textbf{"Watch Party"} cho phép đồng bộ hóa trạng thái phát video nhóm với độ trễ siêu thấp ($<300ms$). Các mục tiêu công việc cụ thể bao gồm:
+Nhiệm vụ trọng tâm của đợt thực tập là nghiên cứu sâu về giao thức truyền thông hai chiều thời gian thực WebSocket, kết hợp kiến trúc máy chủ xử lý sự kiện bất đồng bộ để xây dựng nền tảng Web Application \textbf{"Watch Party"} cho phép đồng bộ hóa trạng thái phát video nhóm thời gian thực qua mạng internet. Các mục tiêu công việc cụ thể bao gồm:
 \begin{enumerate}[leftmargin=1.2cm]
     \item \textbf{Xây dựng hệ thống xác thực người dùng bảo mật:} Hỗ trợ đăng ký, đăng nhập tài khoản bằng JWT (JSON Web Token), mã hóa mật khẩu một chiều với thuật toán Bcrypt và cơ chế xác thực OTP 2 bước qua Email.
     \item \textbf{Quản lý phòng xem nhóm thời gian thực:} Cho phép người dùng khởi tạo phòng xem riêng tư/công khai, tham gia phòng thông qua Mã phòng (\texttt{Room ID}) duy nhất và quản lý danh sách thành viên đang trực tuyến.
@@ -170,7 +170,7 @@ WebSocket là giao thức truyền thông chuẩn hóa bởi IETF trong RFC 6455
 \hline
 \textbf{Tiêu chí} & \textbf{WebSocket} & \textbf{HTTP Long-Polling} & \textbf{Server-Sent Events (SSE)} \\ \hline
 \textbf{Chiều truyền thông} & Song công (Full-duplex) & 1 chiều theo lượt Request & 1 chiều (Server $\rightarrow$ Client) \\ \hline
-\textbf{Độ trễ (Latency)} & Rất thấp ($<50ms$) & Cao (phụ thuộc HTTP RTT) & Thấp ($<100ms$) \\ \hline
+\textbf{Độ trễ truyền nhận} & Thấp & Cao (phụ thuộc HTTP RTT) & Trung bình \\ \hline
 \textbf{Chi phí Header} & Rất nhỏ ($2B - 10B$) & Rất lớn ($400B - 800B$/req) & Trung bình (HTTP Header) \\ \hline
 \textbf{Tính phù hợp đồng bộ} & Tối ưu cho Video Sync \& Chat & Kém (tốn tài nguyên) & Chỉ phù hợp nhận sự kiện 1 chiều \\ \hline
 \end{tabular}
@@ -219,7 +219,7 @@ Trong hệ thống Watch Party, thư viện \textbf{Socket.IO} được lựa ch
 \hline
 \textbf{Tầng Kiến trúc} & \textbf{Thành phần mã nguồn} & \textbf{Nhiệm vụ và Trách nhiệm chính} \\ \hline
 \textbf{API / Controller Layer} & \texttt{src/routes/*.ts}\newline \texttt{src/controllers/*.ts}\newline \texttt{src/sockets/*.ts} & Tiếp nhận yêu cầu HTTP REST API và sự kiện WebSocket từ Client; kiểm tra dữ liệu đầu vào (Validation); giải mã và kiểm tra quyền JWT bằng Middleware \texttt{authenticateToken}. \\ \hline
-\textbf{Service Layer} & \texttt{src/services/*.ts} & Chứa toàn bộ logic nghiệp vụ chính của hệ thống: xử lý đăng ký/đăng nhập, tính toán thuật toán bù độ trễ (Drift Compensation), quản lý quyền Host, gửi email OTP và dọn dẹp tệp video. \\ \hline
+\textbf{Service Layer} & \texttt{src/services/*.ts} & Chứa toàn bộ logic nghiệp vụ chính của hệ thống: xử lý đăng ký/đăng nhập, tính toán mốc thời gian phát (Progress Calculation), quản lý quyền Host, gửi email OTP và dọn dẹp tệp video. \\ \hline
 \textbf{Repository Layer} & \texttt{src/db.ts}\newline (Data Access Queries) & Đóng gói các câu lệnh truy vấn SQL trực tiếp tới cơ sở dữ liệu PostgreSQL (thông qua thư viện \texttt{pg} Pool), tách biệt hoàn toàn logic nghiệp vụ khỏi cú pháp CSDL. \\ \hline
 \textbf{Database \& Cache Layer} & PostgreSQL \newline Redis In-memory & Lưu trữ bền vững dữ liệu tài khoản, phòng xem, lịch sử chat (PostgreSQL); Lưu trữ đệm trạng thái phát thời gian thực, OTP và Refresh Token (Redis). \\ \hline
 \end{tabular}
@@ -525,28 +525,12 @@ Hệ thống đã hoàn thiện 100\% các chức năng với giao diện Web Si
 \end{table}
 
 
-\subsubsection{Đánh giá độ trễ đồng bộ (Latency Benchmark)}
-Độ trễ đồng bộ được đo bằng cách ghi nhận khoảng thời gian từ lúc Client A phát sự kiện điều khiển (\texttt{set-playback}) tới lúc Client B nhận được sự kiện \texttt{playback-updated} tương ứng, sử dụng đồng hồ \texttt{performance.now()} tại cả hai đầu. Mỗi kịch bản mạng được đo lặp lại $50$ lần liên tiếp để lấy giá trị tối thiểu, trung bình và tối đa:
-
-\begin{table}[H]
-\centering
-\small
-\caption{Đánh giá độ trễ đồng bộ video thời gian thực trong các kịch bản mạng}
-\label{tab:latency_bench}
-\renewcommand{\arraystretch}{1.3}
-\begin{tabular}{|p{4.5cm}|c|c|c|}
-\hline
-\textbf{Môi trường mạng kiểm thử} & \textbf{Độ trễ tối thiểu} & \textbf{Độ trễ trung bình} & \textbf{Độ trễ tối đa} \\ \hline
-Mạng nội bộ (LAN / Localhost) & $12ms$ & $25ms$ & $45ms$ \\ \hline
-Wifi cáp quang (Hà Nội) & $45ms$ & $85ms$ & $150ms$ \\ \hline
-Mạng di động 4G / Ngrok Tunnel & $120ms$ & $210ms$ & $380ms$ \\ \hline
-\end{tabular}
-\end{table}
-
+\subsubsection{Đánh giá khả năng đồng bộ (State Synchronization Evaluation)}
+Hệ thống sử dụng các sự kiện WebSocket hai chiều (\texttt{set-playback}, \texttt{playback-updated}) để truyền nhận và đồng bộ trạng thái phát video giữa các máy tính trong phòng. Khi có thao tác điều khiển (Play, Pause, Seek), thông tin trạng thái được máy chủ gửi tới toàn bộ các Client tham gia phòng. Đối với thành viên mới gia nhập phòng, máy chủ tự động tính toán mốc thời gian phát hiện tại dựa trên thông tin lưu trữ ở Redis để đảm bảo tính nhất quán trạng thái.
 
 \subsection{Đánh giá ưu nhược điểm \& Bài học kinh nghiệm}
 \begin{itemize}[leftmargin=1.2cm]
-    \item \textbf{Ưu điểm:} Độ trễ đồng bộ siêu thấp ($<300ms$), kiến trúc xác thực Token kép bảo mật, xử lý triệt để các sự cố vòng lặp sự kiện và dọn dẹp đĩa tự động.
+    \item \textbf{Ưu điểm:} Đồng bộ trạng thái phòng xem tức thời qua WebSocket, kiến trúc xác thực Token kép bảo mật, xử lý triệt để các sự cố vòng lặp sự kiện và dọn dẹp đĩa tự động.
     \item \textbf{Hạn chế:} Khi kết nối mạng của Client bị mất gói (Packet loss) nặng, trình phát bị nạp đệm (Buffering) có thể gây lệch pha tạm thời trước khi lượt Sync tiếp theo cân chỉnh.
     \item \textbf{Bài học kinh nghiệm:} Nâng cao tư duy thiết kế hệ thống bất đồng bộ thời gian thực, làm chủ việc kết hợp PostgreSQL \& Redis, và rèn luyện kỹ năng phân tích vết lỗi (debugging).
 \end{itemize}
@@ -557,7 +541,7 @@ Mạng di động 4G / Ngrok Tunnel & $120ms$ & $210ms$ & $380ms$ \\ \hline
 \section*{KẾT LUẬN}
 \addcontentsline{toc}{section}{KẾT LUẬN}
 
-Báo cáo kết thúc thực tập đã hoàn thành đầy đủ và chỉn chu các mục tiêu đề ra. Sản phẩm Web Application **Watch Party** đã giải quyết triệt để bài toán đồng bộ phiên xem video nhóm qua mạng internet với độ trễ siêu thấp ($<300ms$), đem lại trải nghiệm tương tác mượt mà và chân thực cho người dùng. Thông qua đợt thực tập, sinh viên đã củng cố vững chắc các kiến thức nền tảng đào tạo tại Khoa Toán - Cơ - Tin học, đồng thời làm chủ công nghệ lập trình Web thời gian thực với Node.js, Socket.IO, PostgreSQL và Redis.
+Báo cáo kết thúc thực tập đã hoàn thành đầy đủ và chỉn chu các mục tiêu đề ra. Sản phẩm Web Application \textbf{"Watch Party"} đã giải quyết triệt để bài toán đồng bộ phiên xem video nhóm qua mạng internet bằng giao thức WebSocket, đem lại trải nghiệm tương tác mượt mà và chân thực cho người dùng. Thông qua đợt thực tập, sinh viên đã củng cố vững chắc các kiến thức nền tảng đào tạo tại Khoa Toán - Cơ - Tin học, đồng thời làm chủ công nghệ lập trình Web thời gian thực với Node.js, Socket.IO, PostgreSQL và Redis.
 
 Trong thời gian tới, hệ thống có thể được tiếp tục mở rộng theo các hướng phát triển:
 \begin{enumerate}[leftmargin=1.2cm]

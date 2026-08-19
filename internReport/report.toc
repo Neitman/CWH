@@ -24,7 +24,7 @@
 \contentsline {subsection}{\numberline {3.1}Giới thiệu sản phẩm phần mềm và Giao diện}{15}{subsection.3.1}%
 \contentsline {subsection}{\numberline {3.2}Kết quả kiểm thử và Phân tích lỗi kỹ thuật}{16}{subsection.3.2}%
 \contentsline {subsubsection}{\numberline {3.2.1}Kết quả các Test Cases kiểm thử chức năng}{16}{subsubsection.3.2.1}%
-\contentsline {subsubsection}{\numberline {3.2.2}Đánh giá độ trễ đồng bộ (Latency Benchmark)}{16}{subsubsection.3.2.2}%
+\contentsline {subsubsection}{\numberline {3.2.2}Đánh giá khả năng đồng bộ (State Synchronization Evaluation)}{16}{subsubsection.3.2.2}%
 \contentsline {subsection}{\numberline {3.3}Đánh giá ưu nhược điểm \& Bài học kinh nghiệm}{17}{subsection.3.3}%
-\contentsline {section}{KẾT LUẬN}{18}{section*.17}%
-\contentsline {section}{TÀI LIỆU THAM KHẢO}{19}{section*.18}%
+\contentsline {section}{KẾT LUẬN}{18}{section*.16}%
+\contentsline {section}{TÀI LIỆU THAM KHẢO}{19}{section*.17}%

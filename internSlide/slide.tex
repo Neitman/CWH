@@ -27,7 +27,7 @@
 
 % Thông tin trang bìa
 \title[BÁO CÁO THỰC TẬP]{BÁO CÁO KẾT THÚC THỰC TẬP CHUYÊN NGÀNH}
-\subtitle{\textbf{Ứng dụng WebSocket trong việc xây dựng trang web xem video đồng bộ trạng thái độ trễ thấp}}
+\subtitle{\textbf{Ứng dụng WebSocket trong việc xây dựng trang web xem video đồng bộ trạng thái}}
 \author[Tạ Tiến Nam]{Sinh viên: \textbf{Tạ Tiến Nam} \\ Mã SV: 23000143 -- Lớp: K68A2 Toán Tin}
 \institute[HUS - VNU]{Khoa Toán - Cơ - Tin học \\ Trường Đại học Khoa học Tự nhiên, ĐHQGHN}
 \date{Hà Nội, Năm 2026}
@@ -47,18 +47,13 @@
 % ==================== PHẦN 1 ====================
 \section{PHẦN 1: GIỚI THIỆU}
 
-\begin{frame}{1.1. Phát biểu bài toán \& Công việc được giao}
-    \begin{block}{Đặt vấn đề thực tế}
-        \begin{itemize}
-            \item Nhu cầu xem video nhóm từ xa (Co-watching) ngày càng gia tăng mạnh mẽ.
-            \item Giải pháp thủ công (đếm ngược 3-2-1) bộc lộ hạn chế lớn: lệch độ trễ mạng ($2s - 10s$) và làm mất tính tương tác thời gian thực khi có người tạm dừng.
-        \end{itemize}
-    \end{block}
+\begin{frame}{1.1. Công việc được giao}
+    
     
     \vspace{0.3cm}
-    \begin{block}{Mục tiêu \& Công việc được giao}
+    \begin{block}{Công việc}
         \begin{itemize}
-            \item Nghiên cứu \& phát triển ứng dụng Web thời gian thực đồng bộ phát video nhóm với độ trễ siêu thấp ($<1s$).
+            \item Nghiên cứu \& phát triển ứng dụng Web thời gian thực đồng bộ phát video nhóm qua giao thức WebSocket.
             \item Xây dựng hệ thống xác thực an toàn (JWT, OTP Email, Bcrypt, Token kép Access/Refresh Token).
             \item Quản lý phòng xem, danh sách phát cá nhân, tải lên \& stream video local tùy chỉnh, trò chuyện Timestamp, phân quyền chủ phòng và Dashboard quản trị.
         \end{itemize}
@@ -70,7 +65,7 @@
         \begin{itemize}
             \item Kênh truyền thông \textbf{song công toàn phần (Full-duplex)} trên 1 kết nối TCP duy nhất.
             \item Duy trì kết nối mở liên tục: Client và Server chủ động Push dữ liệu tức thì.
-            \item \textbf{Tối ưu hiệu năng:} Frame nhị phân rất nhỏ ($2B - 10B$), loại bỏ HTTP Header overhead, độ trễ siêu thấp ($<100ms$).
+            \item \textbf{Tối ưu hiệu năng:} Frame nhị phân rất nhỏ ($2B - 10B$), loại bỏ HTTP Header overhead, tối ưu dung lượng truyền tải.
         \end{itemize}
     \end{block}
     
@@ -92,7 +87,7 @@
     \end{block}
     
     \vspace{0.2cm}
-    \begin{block}{Kiến trúc Cơ sở dữ liệu Lai (Hybrid Database)}
+    \begin{block}{Kiến trúc Cơ sở dữ liệu}
         \begin{itemize}
             \item \textbf{PostgreSQL (RDBMS):} Lưu trữ bền vững tài khoản người dùng, thông tin phòng xem, danh sách phát cá nhân và lịch sử tin nhắn trò chuyện.
             \item \textbf{Redis (In-memory Cache):} Lưu trữ trạng thái phát thời gian thực (\texttt{progress}, \texttt{isPlaying}, \texttt{lastUpdated}), OTP code, Refresh Token với tốc độ phản hồi $<1ms$.
@@ -120,23 +115,7 @@
     \end{table}
 \end{frame}
 
-\begin{frame}{2.1a. Kiến trúc Phân tầng Backend (4 Lớp)}
-    \begin{table}[h!]
-    \centering
-    \small
-    \begin{tabular}{|p{2.8cm}|p{3.8cm}|p{5.8cm}|}
-    \hline
-    \textbf{Tầng Kiến trúc} & \textbf{Thành phần mã nguồn} & \textbf{Nhiệm vụ \& Trách nhiệm chính} \\ \hline
-    \textbf{API / Controller} & \texttt{routes/}, \texttt{controllers/}, \texttt{sockets/} & Xử lý request REST API \& WebSocket, kiểm tra JWT middleware \texttt{authenticateToken}. \\ \hline
-    \textbf{Service Layer} & \texttt{src/services/*.ts} & Chứa logic nghiệp vụ: đồng bộ video, bù độ trễ, phân quyền Host, gửi OTP \& dọn dẹp file. \\ \hline
-    \textbf{Repository Layer} & \texttt{src/db.ts} (SQL Queries) & Thao tác CRUD trực tiếp với CSDL PostgreSQL qua thư viện \texttt{pg} Pool. \\ \hline
-    \textbf{Database \& Cache} & PostgreSQL \& Redis & PostgreSQL lưu bền vững tài khoản, phòng, chat; Redis đệm trạng thái $<1ms$, OTP, Refresh Token. \\ \hline
-    \end{tabular}
-    \caption{Ánh xạ 4 tầng kiến trúc phân lập của máy chủ Backend}
-    \end{table}
-\end{frame}
-
-\begin{frame}{2.1b. Sơ đồ thực thể liên kết (ERD) Cơ sở dữ liệu}
+\begin{frame}{2.1a. Sơ đồ thực thể liên kết (ERD) Cơ sở dữ liệu}
     \centering
     \resizebox{0.82\linewidth}{!}{%
     \begin{tikzpicture}[
@@ -213,6 +192,25 @@
     }
 \end{frame}
 
+\begin{frame}{2.1b. Kiến trúc Phân tầng Backend (4 Lớp)}
+    \begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{|p{2.8cm}|p{3.8cm}|p{5.8cm}|}
+    \hline
+    \textbf{Tầng Kiến trúc} & \textbf{Thành phần mã nguồn} & \textbf{Nhiệm vụ \& Trách nhiệm chính} \\ \hline
+    \textbf{API / Controller} & \texttt{routes/}, \texttt{controllers/}, \texttt{sockets/} & Xử lý request REST API \& WebSocket, kiểm tra JWT middleware \texttt{authenticateToken}. \\ \hline
+    \textbf{Service Layer} & \texttt{src/services/*.ts} & Chứa logic nghiệp vụ: đồng bộ trạng thái video, phân quyền Host, gửi OTP \& dọn dẹp file. \\ \hline
+    \textbf{Repository Layer} & \texttt{src/db.ts} (SQL Queries) & Thao tác CRUD trực tiếp với CSDL PostgreSQL qua thư viện \texttt{pg} Pool. \\ \hline
+    \textbf{Database \& Cache} & PostgreSQL \& Redis & PostgreSQL lưu bền vững tài khoản, phòng, chat; Redis đệm trạng thái $<1ms$, OTP, Refresh Token. \\ \hline
+    \end{tabular}
+    \caption{Ánh xạ 4 tầng kiến trúc phân lập của máy chủ Backend}
+    \end{table}
+\end{frame}
+
+
+
+
 \begin{frame}{2.2. Module Xác thực OTP Email \& Cơ chế Token Kép}
     \begin{columns}[T]
         \begin{column}{0.48\textwidth}
@@ -237,16 +235,16 @@
     \end{columns}
 \end{frame}
 
-\begin{frame}{2.3. Triển khai Đồng bộ Video \& Thuật toán Khử trễ}
+\begin{frame}{2.3. Triển khai Đồng bộ Trạng thái Video}
     \begin{block}{Khắc phục vòng lặp sự kiện (Event Loop Feedback Loop)}
-        Khi Client nhận lệnh đồng bộ từ Server và gọi API trình phát (\texttt{seekTo}, \texttt{pauseVideo}), sự kiện \texttt{onStateChange} tự động bật làm gửi ngược tin nhắn lên Server. Hệ thống sử dụng \textbf{cờ \texttt{isSyncing = true}} để tạm khóa gửi tin nhắn trong $300ms$.
+        Khi Client nhận lệnh đồng bộ từ Server và gọi API trình phát (\texttt{seekTo}, \texttt{pauseVideo}), sự kiện \texttt{onStateChange} tự động bật làm gửi ngược tin nhắn lên Server. Hệ thống sử dụng \textbf{cờ \texttt{isSyncing = true}} để tạm khóa gửi tin nhắn phản hồi.
     \end{block}
     
     \vspace{0.2cm}
-    \begin{block}{Thuật toán bù sai lệch thời gian phát (Drift Compensation)}
+    \begin{block}{Tính toán mốc thời gian phát (Progress Calculation)}
         Khi người dùng mới vào phòng, Server tự động tính thời gian video đã trôi qua dựa trên mốc \texttt{lastUpdated} lưu trong Redis:
         \[ \text{progress (s)} = \text{progress\_gốc (s)} + \frac{\text{Thời gian hiện tại (ms)} - \text{lastUpdated (ms)}}{1000} \]
-        Đảm bảo các Client luôn xem đúng mốc thời gian với sai lệch $<300ms$.
+        Đảm bảo các Client mới gia nhập phòng luôn cập nhật đúng mốc thời gian hiện tại.
     \end{block}
 \end{frame}
 
@@ -359,7 +357,7 @@
     \begin{tabular}{|c|p{4.8cm}|p{5.2cm}|c|}
     \hline
     \textbf{STT} & \textbf{Kịch bản kiểm thử (Test Case)} & \textbf{Kết quả kỳ vọng} & \textbf{Trạng thái} \\ \hline
-    6 & Đồng bộ sự kiện Play/Pause/Seek & Các Client đồng bộ trạng thái phát trong $<300ms$ & PASSED \\ \hline
+    6 & Đồng bộ sự kiện Play/Pause/Seek & Các Client đồng bộ tức thì trạng thái phát video & PASSED \\ \hline
     7 & Chat tin nhắn đính kèm Timestamp & Tin nhắn hiển thị link thời gian nhảy video & PASSED \\ \hline
     8 & Phân quyền Host \& Đổi quyền thành viên & Cập nhật tức thì quyền Read-Only/Write qua Socket & PASSED \\ \hline
     9 & Quản lý Danh sách phát cá nhân & Lưu Playlist trong PostgreSQL, cho phép Reorder & PASSED \\ \hline
@@ -369,27 +367,16 @@
 \end{frame}
 
 
-\begin{frame}{3.3. Phân tích 4 lỗi kỹ thuật đã xử lý triệt để}
-    \begin{enumerate}[leftmargin=1.2cm]
-        \item \textbf{Lỗi vòng lặp sự kiện vô hạn (Event Loop Feedback):} Trình phát gọi API kích hoạt lại \texttt{onStateChange}. \textit{Giải pháp:} Sử dụng cờ cản \texttt{isSyncing} tạm khóa phát tin nhắn ngược lên Server trong $300ms$.
-        \vspace{0.15cm}
-        \item \textbf{Lỗi trôi thời gian phát (Time Drift):} Người vào sau bị lệch pha. \textit{Giải pháp:} Thuật toán Drift Compensation tự động tính toán thời gian trôi qua dựa trên \texttt{lastUpdated} trong Redis.
-        \vspace{0.15cm}
-        \item \textbf{Lỗi rò rỉ tệp tin rác trên đĩa:} Video tự tải lên không bị xóa khi gỡ bài. \textit{Giải pháp:} Xây dựng hàm \texttt{cleanupCustomVideoFile()} xóa tệp tin bằng \texttt{fs.unlinkSync()} ngay khi bỏ bài khỏi Queue.
-        \vspace{0.15cm}
-        \item \textbf{Lỗi Token JWT hết hạn:} Ngắt kết nối giữa chừng. \textit{Giải pháp:} Đăng ký handler \texttt{auth-error} hiển thị thông báo và yêu cầu chuyển hướng đăng nhập/refresh token.
-    \end{enumerate}
-\end{frame}
 
-\begin{frame}{3.4. Đánh giá độ trễ \& Bài học kinh nghiệm}
+\begin{frame}{3.4. Đánh giá khả năng đồng bộ \& Bài học kinh nghiệm}
     \begin{columns}[T]
         \begin{column}{0.48\textwidth}
-            \begin{block}{Đánh giá độ trễ (Latency Benchmark)}
+            \begin{block}{Đánh giá khả năng đồng bộ}
                 \begin{itemize}
-                    \item \textbf{Mạng LAN / Localhost:} $25ms$
-                    \item \textbf{Wifi cáp quang:} $85ms$
-                    \item \textbf{Mạng di động 4G / Tunnel:} $210ms$
-                    \item \textit{Kết luận:} Độ trễ truyền đồng bộ luôn nhỏ hơn $300ms$ ($<1s$), đáp ứng tốt mục tiêu đề tài.
+                    \item \textbf{Đồng bộ trạng thái:} Truyền nhận các lệnh Play, Pause, Seek tức thời tới tất cả Client trong phòng.
+                    \item \textbf{Tính toán thời gian:} Tự động cập nhật mốc thời gian phát chuẩn khi Client mới gia nhập phòng.
+                    \item \textbf{Khử vòng lặp sự kiện:} Sử dụng cơ chế tạm khóa ($isSyncing$) để tránh phản hồi trùng lặp.
+                    \item \textit{Kết luận:} Đảm bảo tính nhất quán trạng thái phòng xem nhóm thời gian thực.
                 \end{itemize}
             \end{block}
         \end{column}
@@ -411,7 +398,7 @@
 
 \begin{frame}{Kết luận \& Hướng phát triển}
     \begin{block}{Tổng kết đề tài}
-        Đề tài đã hoàn thành xuất sắc đầy đủ các mục tiêu đặt ra, giải quyết bài toán đồng bộ phiên xem video nhóm thời gian thực với độ trễ thấp ($<300ms$), giao diện hiện đại và tính bảo mật cao.
+        Đề tài đã hoàn thành đầy đủ các mục tiêu đặt ra, giải quyết bài toán đồng bộ phiên xem video nhóm thời gian thực qua giao thức WebSocket, giao diện hiện đại và tính bảo mật cao.
     \end{block}
     
     \vspace{0.3cm}

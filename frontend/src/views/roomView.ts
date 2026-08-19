@@ -9,8 +9,11 @@ let isYtApiReady = false;
 let currentPlayingSong: any = null;
 let isLooping = false;
 let isPlayingLocally = false;
-let currentVolume = 100;
-let isMuted = false;
+
+const savedVolStr = localStorage.getItem('wp_volume');
+const savedMutedStr = localStorage.getItem('wp_muted');
+let currentVolume = savedVolStr !== null ? Math.max(0, Math.min(100, parseInt(savedVolStr, 10) ?? 100)) : 100;
+let isMuted = savedMutedStr === 'true';
 let showToastFn: (msg: string, type: 'info' | 'error' | 'success') => void = () => {};
 
 function extractYouTubeId(urlOrId: string): string | null {
@@ -1006,6 +1009,9 @@ function startPlayerProgressLoop() {
 }
 
 function applyVolumeState() {
+  localStorage.setItem('wp_volume', currentVolume.toString());
+  localStorage.setItem('wp_muted', isMuted ? 'true' : 'false');
+
   const volumeIcon = document.getElementById('volume-icon');
   const muteIcon = document.getElementById('mute-icon');
   const volumeBar = document.getElementById('volume-bar') as HTMLInputElement;
@@ -1187,6 +1193,8 @@ function setupPlayerControls() {
     isMuted = currentVolume === 0;
     applyVolumeState();
   });
+
+  applyVolumeState();
 
   let lastPlayPauseClickTime = 0;
   let lastNextClickTime = 0;
