@@ -18,12 +18,19 @@
 \setbeamertemplate{navigation symbols}{} % Ẩn thanh điều hướng
 \setbeamertemplate{footline}[frame number] % Hiển thị số trang
 
-% Định nghĩa màu sắc chủ đạo
-\definecolor{primary}{RGB}{30, 64, 120}
+% Định nghĩa màu sắc chủ đạo (Theme Red / Crimson)
+\usecolortheme{beaver}
+\definecolor{primary}{RGB}{165, 28, 36}
 \definecolor{secondary}{RGB}{220, 53, 69}
 \setbeamercolor{structure}{fg=primary}
 \setbeamercolor{title}{fg=white, bg=primary}
 \setbeamercolor{frametitle}{fg=white, bg=primary}
+\setbeamercolor{palette primary}{fg=white, bg=primary}
+\setbeamercolor{palette secondary}{fg=white, bg=primary!85!black}
+\setbeamercolor{palette tertiary}{fg=white, bg=primary!70!black}
+\setbeamercolor{palette quaternary}{fg=white, bg=primary!50!black}
+\setbeamercolor{block title}{fg=white, bg=primary}
+\setbeamercolor{block body}{fg=black, bg=primary!5}
 
 % Thông tin trang bìa
 \title[BÁO CÁO THỰC TẬP]{BÁO CÁO KẾT THÚC THỰC TẬP CHUYÊN NGÀNH}
@@ -120,14 +127,14 @@
     \resizebox{0.82\linewidth}{!}{%
     \begin{tikzpicture}[
         node distance=1.0cm and 1.5cm,
-        entity/.style={rectangle, draw=blue!70!black, fill=blue!5, rounded corners=4pt, minimum width=4.5cm, font=\small\sffamily, align=left, inner sep=5pt, line width=1pt},
-        rel/.style={->, >=stealth, line width=1.2pt, blue!70!black}
+        entity/.style={rectangle, draw=primary!80!black, fill=primary!5, rounded corners=4pt, minimum width=4.5cm, font=\small\sffamily, align=left, inner sep=5pt, line width=1pt},
+        rel/.style={->, >=stealth, line width=1.2pt, primary!80!black}
     ]
         % Central Entity: users
         \node[entity] (users) {
             \textbf{\large users}\\[3pt]
             \rule{4.1cm}{0.5pt}\\[3pt]
-            \textbf{\color{red!70!black}PK} \texttt{id} : \textit{SERIAL}\\
+            \textbf{\color{primary!80!black}PK} \texttt{id} : \textit{SERIAL}\\
             \texttt{username} : \textit{VARCHAR}\\
             \texttt{password} : \textit{VARCHAR}\\
             \texttt{email} : \textit{VARCHAR}\\
@@ -139,11 +146,11 @@
         \node[entity, above left=0.4cm and 1.2cm of users] (rooms) {
             \textbf{\large user\_rooms}\\[3pt]
             \rule{4.1cm}{0.5pt}\\[3pt]
-            \textbf{\color{red!70!black}PK} \texttt{id} : \textit{SERIAL}\\
+            \textbf{\color{primary!80!black}PK} \texttt{id} : \textit{SERIAL}\\
             \texttt{room\_id} : \textit{VARCHAR}\\
             \texttt{name} : \textit{VARCHAR}\\
             \texttt{description} : \textit{TEXT}\\
-            \textbf{\color{blue!70!black}FK} \texttt{user\_id} : \textit{INTEGER}\\
+            \textbf{\color{primary!80!black}FK} \texttt{user\_id} : \textit{INTEGER}\\
             \texttt{created\_at} : \textit{TIMESTAMP}
         };
 
@@ -151,9 +158,9 @@
         \node[entity, below left=0.4cm and 1.2cm of users] (messages) {
             \textbf{\large discussion\_messages}\\[3pt]
             \rule{4.1cm}{0.5pt}\\[3pt]
-            \textbf{\color{red!70!black}PK} \texttt{id} : \textit{SERIAL}\\
+            \textbf{\color{primary!80!black}PK} \texttt{id} : \textit{SERIAL}\\
             \texttt{room\_id} : \textit{VARCHAR}\\
-            \textbf{\color{blue!70!black}FK} \texttt{user\_id} : \textit{INTEGER}\\
+            \textbf{\color{primary!80!black}FK} \texttt{user\_id} : \textit{INTEGER}\\
             \texttt{username} : \textit{VARCHAR}\\
             \texttt{message} : \textit{TEXT}\\
             \texttt{video\_timestamp} : \textit{INTEGER}
@@ -163,8 +170,8 @@
         \node[entity, above right=0.4cm and 1.2cm of users] (playlists) {
             \textbf{\large user\_playlists}\\[3pt]
             \rule{4.1cm}{0.5pt}\\[3pt]
-            \textbf{\color{red!70!black}PK} \texttt{id} : \textit{SERIAL}\\
-            \textbf{\color{blue!70!black}FK} \texttt{user\_id} : \textit{INTEGER}\\
+            \textbf{\color{primary!80!black}PK} \texttt{id} : \textit{SERIAL}\\
+            \textbf{\color{primary!80!black}FK} \texttt{user\_id} : \textit{INTEGER}\\
             \texttt{title} : \textit{VARCHAR}\\
             \texttt{description} : \textit{TEXT}\\
             \texttt{created\_at} : \textit{TIMESTAMP}
@@ -174,8 +181,8 @@
         \node[entity, below right=0.4cm and 1.2cm of playlists] (items) {
             \textbf{\large user\_playlist\_items}\\[3pt]
             \rule{4.1cm}{0.5pt}\\[3pt]
-            \textbf{\color{red!70!black}PK} \texttt{id} : \textit{SERIAL}\\
-            \textbf{\color{blue!70!black}FK} \texttt{playlist\_id} : \textit{INTEGER}\\
+            \textbf{\color{primary!80!black}PK} \texttt{id} : \textit{SERIAL}\\
+            \textbf{\color{primary!80!black}FK} \texttt{playlist\_id} : \textit{INTEGER}\\
             \texttt{song\_id} : \textit{VARCHAR}\\
             \texttt{title} : \textit{VARCHAR}\\
             \texttt{thumbnail} : \textit{TEXT}\\
@@ -256,13 +263,7 @@
             \item Lưu trữ an toàn tại thư mục lưu trữ tĩnh của máy chủ.
         \end{itemize}
         \vspace{0.2cm}
-        \item \textbf{Truyền dữ liệu phát phân đoạn chuẩn HTTP Range Requests (Code 206):}
-        \begin{itemize}
-            \item Xử lý yêu cầu truyền dữ liệu phân đoạn từ phía Client qua HTTP Header (Range Requests).
-            \item Server trả về phản hồi dữ liệu phân đoạn (HTTP 206 Partial Content) qua cơ chế Stream I/O.
-            \item Giúp người dùng tua mượt mà không cần nạp trước toàn bộ tệp lớn về máy.
-        \end{itemize}
-        \vspace{0.2cm}
+        
         \item \textbf{Cơ chế dọn dẹp bộ nhớ đĩa tự động (Auto Disk Cleanup):}
         \begin{itemize}
             \item Tự động xóa tệp video khỏi đĩa cứng ngay khi gỡ video khỏi hàng chờ phát.
@@ -336,37 +337,7 @@
     \end{enumerate}
 \end{frame}
 
-\begin{frame}{3.2. Bảng kết quả kiểm thử chức năng (Phần 1)}
-    \small
-    \begin{table}[h!]
-    \centering
-    \begin{tabular}{|c|p{4.8cm}|p{5.2cm}|c|}
-    \hline
-    \textbf{STT} & \textbf{Kịch bản kiểm thử (Test Case)} & \textbf{Kết quả kỳ vọng} & \textbf{Trạng thái} \\ \hline
-    1 & Đăng ký \& Đăng nhập tài khoản & Tạo Token JWT, lưu vào LocalStorage & PASSED \\ \hline
-    2 & Gửi mã OTP xác thực Email & Mã OTP 6 chữ số gửi qua SMTP, lưu 5m ở Redis & PASSED \\ \hline
-    3 & Tạo phòng mới \& Nhận Room ID & Tạo bản ghi phòng trong PostgreSQL & PASSED \\ \hline
-    4 & Kết nối WebSocket Handshake & Xác thực JWT Token, join Room & PASSED \\ \hline
-    5 & Thêm video YouTube / Upload local & Đồng bộ danh sách \& Stream HTTP Range (206) & PASSED \\ \hline
-    \end{tabular}
-    \end{table}
-\end{frame}
 
-\begin{frame}{3.2. Bảng kết quả kiểm thử chức năng (Phần 2)}
-    \small
-    \begin{table}[h!]
-    \centering
-    \begin{tabular}{|c|p{4.8cm}|p{5.2cm}|c|}
-    \hline
-    \textbf{STT} & \textbf{Kịch bản kiểm thử (Test Case)} & \textbf{Kết quả kỳ vọng} & \textbf{Trạng thái} \\ \hline
-    6 & Đồng bộ sự kiện Play/Pause/Seek & Các Client đồng bộ tức thì trạng thái phát video & PASSED \\ \hline
-    7 & Chat tin nhắn đính kèm Timestamp & Tin nhắn hiển thị link thời gian nhảy video & PASSED \\ \hline
-    8 & Phân quyền Host \& Đổi quyền thành viên & Cập nhật tức thì quyền Read-Only/Write qua Socket & PASSED \\ \hline
-    9 & Quản lý Danh sách phát cá nhân & Lưu Playlist trong PostgreSQL, cho phép Reorder & PASSED \\ \hline
-    10 & Giám sát hệ thống Admin Dashboard & Hiển thị chỉ số RAM/CPU \& Quản lý phòng Active & PASSED \\ \hline
-    \end{tabular}
-    \end{table}
-\end{frame}
 
 
 
