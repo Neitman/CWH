@@ -72,7 +72,7 @@
     \vspace{0.1cm}
     \begin{block}{Thư viện Socket.IO (Lớp trừu tượng trên nền WebSocket)}
         \begin{itemize}
-            \item \textbf{Cơ chế Room xem nhóm:} Quản lý nhóm Socket qua lệnh \texttt{socket.join(roomId)} để broadcast sự kiện đồng bộ tức thời tới toàn phòng.
+            \item \textbf{Cơ chế Room xem nhóm:} Quản lý nhóm Socket để phát thông điệp đồng bộ (broadcast) tức thời tới toàn bộ thành viên trong phòng.
             \item \textbf{Độ tin cậy cao:} Tự động kết nối lại (Auto-reconnect) và tự động Fallback sang HTTP long-polling khi mạng kém.
         \end{itemize}
     \end{block}
@@ -81,7 +81,7 @@
 \begin{frame}{1.3. Khảo sát Bảo mật \& Kiến trúc Cơ sở dữ liệu}
     \begin{block}{Xác thực \& Bảo mật (JWT + Bcrypt)}
         \begin{itemize}
-            \item \textbf{JWT (JSON Web Token):} Cơ chế phi trạng thái (Stateless), mã hóa chữ ký số HMAC-SHA256. Đính kèm dễ dàng trong REST API Header và WebSocket Handshake (\texttt{socket.handshake.auth.token}).
+            \item \textbf{JWT (JSON Web Token):} Cơ chế phi trạng thái (Stateless), mã hóa chữ ký số HMAC-SHA256. Đính kèm dễ dàng trong REST API Header và quá trình khởi tạo kết nối WebSocket (Handshake).
             \item \textbf{Bcrypt:} Thuật toán băm mật khẩu 1 chiều đính kèm Salt ngẫu nhiên chống vét cạn.
         \end{itemize}
     \end{block}
@@ -90,7 +90,7 @@
     \begin{block}{Kiến trúc Cơ sở dữ liệu}
         \begin{itemize}
             \item \textbf{PostgreSQL (RDBMS):} Lưu trữ bền vững tài khoản người dùng, thông tin phòng xem, danh sách phát cá nhân và lịch sử tin nhắn trò chuyện.
-            \item \textbf{Redis (In-memory Cache):} Lưu trữ trạng thái phát thời gian thực (\texttt{progress}, \texttt{isPlaying}, \texttt{lastUpdated}), OTP code, Refresh Token với tốc độ phản hồi $<1ms$.
+            \item \textbf{Redis (In-memory Cache):} Lưu trữ trạng thái phát thời gian thực (tiến độ video, trạng thái phát/tạm dừng, thời gian cập nhật), mã OTP, Refresh Token với tốc độ phản hồi $<1ms$.
         \end{itemize}
     \end{block}
 \end{frame}
@@ -199,9 +199,9 @@
     \begin{tabular}{|p{2.8cm}|p{3.8cm}|p{5.8cm}|}
     \hline
     \textbf{Tầng Kiến trúc} & \textbf{Thành phần mã nguồn} & \textbf{Nhiệm vụ \& Trách nhiệm chính} \\ \hline
-    \textbf{API / Controller} & \texttt{routes/}, \texttt{controllers/}, \texttt{sockets/} & Xử lý request REST API \& WebSocket, kiểm tra JWT middleware \texttt{authenticateToken}. \\ \hline
-    \textbf{Service Layer} & \texttt{src/services/*.ts} & Chứa logic nghiệp vụ: đồng bộ trạng thái video, phân quyền Host, gửi OTP \& dọn dẹp file. \\ \hline
-    \textbf{Repository Layer} & \texttt{src/db.ts} (SQL Queries) & Thao tác CRUD trực tiếp với CSDL PostgreSQL qua thư viện \texttt{pg} Pool. \\ \hline
+    \textbf{API / Controller} & Router, Controller \& Socket Handlers & Xử lý request REST API \& WebSocket, kiểm tra JWT Middleware xác thực. \\ \hline
+    \textbf{Service Layer} & Tầng Service (TypeScript) & Chứa logic nghiệp vụ: đồng bộ trạng thái video, phân quyền Host, gửi OTP \& dọn dẹp file. \\ \hline
+    \textbf{Repository Layer} & Tầng Repository (SQL Queries) & Thao tác CRUD trực tiếp với CSDL PostgreSQL qua thư viện \texttt{pg} Pool. \\ \hline
     \textbf{Database \& Cache} & PostgreSQL \& Redis & PostgreSQL lưu bền vững tài khoản, phòng, chat; Redis đệm trạng thái $<1ms$, OTP, Refresh Token. \\ \hline
     \end{tabular}
     \caption{Ánh xạ 4 tầng kiến trúc phân lập của máy chủ Backend}
@@ -217,7 +217,7 @@
             \begin{block}{Xác thực OTP Email (Nodemailer)}
                 \begin{itemize}
                     \item Gửi mã xác thực 6 chữ số qua SMTP Email cho Đăng ký \& Quên mật khẩu.
-                    \item Lưu mã OTP đệm trong Redis với thời gian hết hạn (TTL) là $5$ phút (\texttt{300s}).
+                    \item Lưu mã OTP đệm trong Redis với thời gian hết hạn (TTL) là $5$ phút.
                     \item Tự động gửi Email chào mừng khi xác minh thành công.
                 \end{itemize}
             \end{block}
@@ -227,8 +227,8 @@
             \begin{block}{Cơ chế Token Kép \& Bảo mật}
                 \begin{itemize}
                     \item \textbf{Access Token ($5$ phút):} Xác thực REST API \& WebSocket Handshake.
-                    \item \textbf{Refresh Token ($7$ ngày):} Lưu an toàn trong HTTP-Only Cookie \& Redis (\texttt{wp:refreshtoken:<id>}).
-                    \item Route \texttt{/refresh} gia hạn tự động; \texttt{/logout} chủ động thu hồi token.
+                    \item \textbf{Refresh Token ($7$ ngày):} Lưu an toàn trong HTTP-Only Cookie \& bộ đệm Redis.
+                    \item Tự động gia hạn Access Token khi hết hạn và chủ động thu hồi token khi đăng xuất.
                 \end{itemize}
             \end{block}
         \end{column}
@@ -237,13 +237,13 @@
 
 \begin{frame}{2.3. Triển khai Đồng bộ Trạng thái Video}
     \begin{block}{Khắc phục vòng lặp sự kiện (Event Loop Feedback Loop)}
-        Khi Client nhận lệnh đồng bộ từ Server và gọi API trình phát (\texttt{seekTo}, \texttt{pauseVideo}), sự kiện \texttt{onStateChange} tự động bật làm gửi ngược tin nhắn lên Server. Hệ thống sử dụng \textbf{cờ \texttt{isSyncing = true}} để tạm khóa gửi tin nhắn phản hồi.
+        Khi Client nhận lệnh đồng bộ từ Server và gọi API trình phát (thay đổi vị trí, tạm dừng), sự kiện thay đổi trạng thái trình phát tự động kích hoạt làm gửi ngược tin nhắn lên Server. Hệ thống sử dụng \textbf{cờ tạm khóa trạng thái đồng bộ} để ngăn ngừa phản hồi trùng lặp.
     \end{block}
     
     \vspace{0.2cm}
     \begin{block}{Tính toán mốc thời gian phát (Progress Calculation)}
-        Khi người dùng mới vào phòng, Server tự động tính thời gian video đã trôi qua dựa trên mốc \texttt{lastUpdated} lưu trong Redis:
-        \[ \text{progress (s)} = \text{progress\_gốc (s)} + \frac{\text{Thời gian hiện tại (ms)} - \text{lastUpdated (ms)}}{1000} \]
+        Khi người dùng mới vào phòng, Server tự động tính thời gian video đã trôi qua dựa trên mốc thời gian cập nhật gần nhất lưu trong Redis:
+        \[ \text{Tiến độ hiện tại (s)} = \text{Tiến độ ban đầu (s)} + \frac{\text{Thời gian hiện tại (ms)} - \text{Thời gian cập nhật gần nhất (ms)}}{1000} \]
         Đảm bảo các Client mới gia nhập phòng luôn cập nhật đúng mốc thời gian hiện tại.
     \end{block}
 \end{frame}
@@ -253,19 +253,19 @@
         \item \textbf{Tải lên tệp Video địa phương (Multer Upload):}
         \begin{itemize}
             \item Cho phép tải lên các tệp video local (\texttt{.mp4}, \texttt{.webm}, \texttt{.mkv}, \texttt{.avi}, \texttt{.mov}) với dung lượng lên đến $10GB$.
-            \item Lưu trữ an toàn tại thư mục tĩnh \texttt{public/uploads/videos}.
+            \item Lưu trữ an toàn tại thư mục lưu trữ tĩnh của máy chủ.
         \end{itemize}
         \vspace{0.2cm}
         \item \textbf{Truyền dữ liệu phát phân đoạn chuẩn HTTP Range Requests (Code 206):}
         \begin{itemize}
-            \item Route \texttt{GET /api/videos/stream/:filename} xử lý header \texttt{Range: bytes=start-end}.
-            \item Server trả về phản hồi \texttt{206 Partial Content} qua Stream I/O Node.js (\texttt{fs.createReadStream}).
-            \item Giúp người dùng tua (seek) mượt mà không cần nạp trước toàn bộ tệp lớn về máy.
+            \item Xử lý yêu cầu truyền dữ liệu phân đoạn từ phía Client qua HTTP Header (Range Requests).
+            \item Server trả về phản hồi dữ liệu phân đoạn (HTTP 206 Partial Content) qua cơ chế Stream I/O.
+            \item Giúp người dùng tua mượt mà không cần nạp trước toàn bộ tệp lớn về máy.
         \end{itemize}
         \vspace{0.2cm}
         \item \textbf{Cơ chế dọn dẹp bộ nhớ đĩa tự động (Auto Disk Cleanup):}
         \begin{itemize}
-            \item Hàm \texttt{cleanupCustomVideoFile()} tự động xóa tệp bằng \texttt{fs.unlinkSync()} khi gỡ video khỏi Queue.
+            \item Tự động xóa tệp video khỏi đĩa cứng ngay khi gỡ video khỏi hàng chờ phát.
             \item Cron Job ngầm định kỳ mỗi $1$ giờ tự động xóa các tệp video mồ côi quá $6$ giờ.
         \end{itemize}
     \end{itemize}
@@ -275,20 +275,22 @@
     \begin{columns}[T]
         \begin{column}{0.48\textwidth}
             \begin{block}{Phân quyền Chủ phòng (Host Controls)}
+                \small
                 \begin{itemize}
-                    \item Tự động nhận diện Host từ CSDL PostgreSQL \& bộ đệm Redis (\texttt{wp:<roomId>:host}).
-                    \item Host gán/rút quyền tương tác thành viên (\texttt{toggle-permission}: Read-Only / Write).
-                    \item Danh sách tước quyền lưu ở Redis set (\texttt{wp:<roomId>:revoked\_permissions}), kiểm tra tức thì qua \texttt{room-members-updated}.
-                    \item Xóa lịch sử chat (\texttt{clear-discussion}) \& tua bài tiếp (\texttt{next-song}).
+                    \item Tự động nhận diện quyền Chủ phòng (Host) từ CSDL PostgreSQL \& bộ đệm Redis.
+                    \item Host có thể gán hoặc rút quyền tương tác của thành viên (chuyển đổi giữa chế độ Chỉ đọc và Được phép tương tác).
+                    \item Danh sách thành viên bị tước quyền được lưu trữ trong bộ đệm Redis và cập nhật tức thì tới toàn phòng.
+                    \item Cấp đặc quyền cho Host xóa lịch sử trò chuyện và chuyển sang bài phát tiếp theo.
                 \end{itemize}
             \end{block}
         \end{column}
 
         \begin{column}{0.48\textwidth}
             \begin{block}{Danh sách phát cá nhân (Personal Playlists)}
+                \small
                 \begin{itemize}
                     \item Cho phép người dùng tạo, sửa, xóa các Playlist cá nhân lưu trong PostgreSQL.
-                    \item Hỗ trợ thêm/xóa bài hát, sắp xếp lại thứ tự (Reorder items) theo \texttt{position}.
+                    \item Hỗ trợ thêm/xóa bài hát, sắp xếp lại thứ tự các bài hát theo nhu cầu.
                     \item Cho phép nạp hàng loạt (Batch load) playlist cá nhân vào Queue phòng xem.
                 \end{itemize}
             \end{block}
@@ -301,7 +303,7 @@
         \begin{column}{0.48\textwidth}
             \begin{exampleblock}{Chat đính kèm Timestamp}
                 \begin{itemize}
-                    \item Trích xuất mốc thời gian video (\texttt{videoTimestamp}) khi gửi tin nhắn.
+                    \item Trích xuất mốc thời gian phát video tại thời điểm gửi tin nhắn.
                     \item Nhấp vào timestamp trên khung chat $\rightarrow$ Trình phát video tự động tua tới khoảnh khắc tương ứng.
                 \end{itemize}
             \end{exampleblock}
@@ -311,7 +313,7 @@
             \begin{alertblock}{Admin Monitoring Dashboard}
                 \begin{itemize}
                     \item Theo dõi chỉ số phần cứng Server (RAM, CPU, Uptime) \& Health Check Postgres/Redis.
-                    \item Quản lý phòng active, xóa phòng (\texttt{room-deleted}), xóa tài khoản và flush cache Redis (\texttt{/redis/flush}).
+                    \item Quản lý các phòng đang hoạt động, xóa phòng, xóa tài khoản và làm sạch bộ nhớ đệm Redis.
                 \end{itemize}
             \end{alertblock}
         \end{column}
@@ -375,7 +377,7 @@
                 \begin{itemize}
                     \item \textbf{Đồng bộ trạng thái:} Truyền nhận các lệnh Play, Pause, Seek tức thời tới tất cả Client trong phòng.
                     \item \textbf{Tính toán thời gian:} Tự động cập nhật mốc thời gian phát chuẩn khi Client mới gia nhập phòng.
-                    \item \textbf{Khử vòng lặp sự kiện:} Sử dụng cơ chế tạm khóa ($isSyncing$) để tránh phản hồi trùng lặp.
+                    \item \textbf{Khử vòng lặp sự kiện:} Sử dụng cờ tạm khóa trạng thái đồng bộ để tránh phản hồi trùng lặp.
                     \item \textit{Kết luận:} Đảm bảo tính nhất quán trạng thái phòng xem nhóm thời gian thực.
                 \end{itemize}
             \end{block}
