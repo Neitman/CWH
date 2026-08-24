@@ -220,7 +220,7 @@ async function fetchUsers() {
     if (users.length === 0) {
       usersListTbody.innerHTML = `
         <tr>
-          <td colspan="4" class="placeholder-cell">No registered user accounts found.</td>
+          <td colspan="5" class="placeholder-cell">No registered user accounts found.</td>
         </tr>
       `;
       return;
@@ -231,6 +231,7 @@ async function fetchUsers() {
       row.innerHTML = `
         <td class="code">${user.id}</td>
         <td><strong>${user.username}</strong></td>
+        <td>${user.email || '<span style="opacity: 0.5; font-style: italic;">N/A</span>'}</td>
         <td>${formatDate(user.created_at)}</td>
         <td>
           <button class="btn btn-danger-outline btn-icon-only delete-user-btn" data-id="${user.id}" data-username="${user.username}" title="Delete User Account">

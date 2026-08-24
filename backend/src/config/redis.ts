@@ -1,9 +1,10 @@
 import Redis from 'ioredis';
+import { config } from './env';
 
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+const redis = new Redis(config.redisUrl);
 
 redis.on('connect', () => {
-  console.log('Successfully connected to Redis');
+  console.log('Successfully connected to Redis.');
 });
 
 redis.on('error', (err) => {

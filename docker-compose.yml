@@ -7,21 +7,6 @@ services:
     volumes:
       - redis-data:/data
 
-  
-
-  ngrok:
-    image: ngrok/ngrok:latest
-    restart: unless-stopped
-    command:
-      - "http"
-      - "${WINDOWS_HOST_IP:-host.docker.internal}:5173"
-      - "--host-header=rewrite"
-    environment:
-      - NGROK_AUTHTOKEN=3H9tTo9kqtVFYFPBOElBJsw9zqC_5NVYZvLaMANE75KDZpbsD
-    ports:
-      - "4040:4040"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
 
   postgres:
     image: postgres:15-alpine
